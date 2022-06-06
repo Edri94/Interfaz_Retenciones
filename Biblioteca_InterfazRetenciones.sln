@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biblioteca_InterfazRetenciones", "Biblioteca_InterfazRetenciones\Biblioteca_InterfazRetenciones.csproj", "{B108A0B5-4E24-485B-B53F-9BB67203EA1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interfaz_Retenciones", "Interfaz_Retenciones\Interfaz_Retenciones.csproj", "{98F2DD85-9622-4C10-B9D8-10E36B7B6471}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B108A0B5-4E24-485B-B53F-9BB67203EA1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B108A0B5-4E24-485B-B53F-9BB67203EA1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B108A0B5-4E24-485B-B53F-9BB67203EA1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B108A0B5-4E24-485B-B53F-9BB67203EA1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98F2DD85-9622-4C10-B9D8-10E36B7B6471}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98F2DD85-9622-4C10-B9D8-10E36B7B6471}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98F2DD85-9622-4C10-B9D8-10E36B7B6471}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98F2DD85-9622-4C10-B9D8-10E36B7B6471}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EA4D50F2-5531-45CD-ADF3-14D934AF3B34}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,13 @@
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.csproj.AssemblyReference.cache
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.Form1.resources
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.Properties.Resources.resources
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.csproj.GenerateResource.cache
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.csproj.CoreCompileInputs.cache
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\bin\Debug\Interfaz_Retenciones.exe.config
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\bin\Debug\Interfaz_Retenciones.exe
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\bin\Debug\Interfaz_Retenciones.pdb
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\bin\Debug\Biblioteca_InterfazRetenciones.dll
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\bin\Debug\Biblioteca_InterfazRetenciones.pdb
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.csproj.CopyComplete
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.exe
+C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Interfaz_Retenciones\obj\Debug\Interfaz_Retenciones.pdb
