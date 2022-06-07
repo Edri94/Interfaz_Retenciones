@@ -40,7 +40,11 @@ namespace Interfaz_Retenciones
              ref lblPendHoldsLA,    
              ref lblNextHoldLA,
              ref chkRecibeHoldsLA,
-             ref pbrMovimientos);
+             ref pbrMovimientos,
+             ref pnlStatus,
+             ref lblStatus);
+
+            main.Init();
         }
     }
 }

@@ -34,6 +34,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -50,6 +51,7 @@
     <Compile Include="Helpers\Encriptacion.cs" />
     <Compile Include="Helpers\Funcion.cs" />
     <Compile Include="Helpers\Log.cs" />
+    <Compile Include="Models\FAHLDLA.cs" />
     <Compile Include="Models\Map.cs" />
     <Compile Include="Models\QueryParametro.cs" />
     <Compile Include="Models\Registro.cs" />
