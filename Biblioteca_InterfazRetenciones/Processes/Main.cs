@@ -3,7 +3,9 @@ using Biblioteca_InterfazRetenciones.Helpers;
 using Biblioteca_InterfazRetenciones.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Odbc;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -184,6 +186,7 @@ namespace Biblioteca_InterfazRetenciones.Processes
                 // Variable para eliminacion de cuentas
                 string lsCtaCompleta;
                 bool lbHOLDValido;
+                List<Producto> productos = new List<Producto>();
 
                 pbrMovimientos.Value = 0; lbHOLDValido = false;
                 Message("Recibiendo HOLDS KAPITI - TICKET");
@@ -246,7 +249,102 @@ namespace Biblioteca_InterfazRetenciones.Processes
                             NumeroSecuencia = Int32.Parse(dr.GetString(15)),
 
                         });
+
+                        lnContador++;
+
+                        if(lnContador < pbrMovimientos.Maximum)
+                        {
+                            pbrMovimientos.Value = pbrMovimientos.Value + 1; 
+                        }
+
+                        lblStatus.Text = "Recibiendo Holds de HO. (" + lnContador + " Registros)";
+                    }
+                    pbrMovimientos.Value = 0;
+
+                    if(lnContador > 0)
+                    {
+                        lnContador--;
+                    }
+
+                    for (lnDatosHOLD = 0; lnDatosHOLD <= lnContador; lnDatosHOLD++)
+                    {
+                        lbHOLDValido = true;
+
+
+                        if (lnDatosHOLD < pbrMovimientos.Maximum)
+                        {
+                            pbrMovimientos.Value = lnDatosHOLD;
+                        }
+                        int tmp_lnContador = lnContador + 1;
+                        int tmp_lnDatosHOLD = lnDatosHOLD + 1;
+
+                        lblStatus.Text = $"Registrando Holds de HO. ({lnDatosHOLD} de  {tmp_lnContador})";
+
+                        if(Int32.Parse(lblPendHoldsLA.Text) > 0)
+                        {
+                            lblPendHoldsLA.Text = (Int32.Parse(lblPendHoldsLA.Text) - 1).ToString();
+                        }
+
+                        lsTipoTranHold = MaRegistros[lnDatosHOLD].TipoTransaccion;
+                        lsCtaCompleta = MaRegistros[lnDatosHOLD].Agencia.ToString();
+                        lsCtaCompleta = lsCtaCompleta + MaRegistros[lnDatosHOLD].Cuenta;
+                        lsCtaCompleta = lsCtaCompleta + MaRegistros[lnDatosHOLD].Sufijo;
+                        //R: pedimos el tipo de usuario LB@@ o TK@@
+                        lsUsuario = MaRegistros[lnDatosHOLD].Usuario;
+
+                        if(lsUsuario.Contains("TK@@"))
+                        {
+                            lnProductoGlobal = 12;
+                            lnStatusProducto = 2;
+                            lnConceptoDefinidoGlobal = 10;
+                            lnStatusProductoGlobal = 8002;
+                        }
+                        else
+                        {
+                            lnProductoGlobal = 14;
+                            lnStatusProducto = 7;
+                            lnConceptoDefinidoGlobal = 20;
+                            lnStatusProductoGlobal = 8007;
+                        }
+
+                        //'Obtenemos la agencia, el producto y el Status del producto
+                        msSQL = $@"
+                            Select  
+	                            AG.agencia
+	                            ,PR.producto
+	                            ,SP.status_producto
+	                            ,CD.concepto_definido 
+                            From  
+	                            {msDBName}..STATUS_PRODUCTO SP
+	                            INNER JOIN {msDBName}..PRODUCTO PR ON PR.agencia = SP.agencia AND SP.producto = PR.producto 
+	                            INNER JOIN {msDBName}..CONCEPTO_DEFINIDO CD ON PR.agencia  = CD.agencia  AND PR.producto = CD.producto 
+	                            INNER JOIN CATALOGOS..AGENCIA AG ON PR.agencia = AG.agencia 
+                            Where 
+	                            PR.producto_global = {lnProductoGlobal} 
+	                            and 
+	                            SP.status_producto_global = {lnStatusProducto} 
+	                            and 
+	                            CD.concepto_definido_global = {lnConceptoDefinidoGlobal} 
+	                            and 
+	                            AG.prefijo_agencia = '{MaRegistros[lnDatosHOLD].Agencia}'";
+
+                        SqlDataReader dr_1 = bd.ejecutarConsulta(msSQL);
+
+                        if(dr_1 == null)
+                        {
+                            lbHOLDValido = false;
+                            //Inserta el BITACORA_ERROR_HOLD
+                            RegistraErrorHold("No existe la Cuenta Eje " + lsCtaCompleta, lnDatosHOLD);
+                        }
+                        else
+                        {
+                            
+                            productos.Add(Producto.GteProducto(dr_1, MaRegistros[lnDatosHOLD]));
+                        }
+
+                        dr_1.Close();
                         
+
                     }
                 }
 
@@ -258,7 +356,83 @@ namespace Biblioteca_InterfazRetenciones.Processes
             }
         }
 
-       
+        private void RegistraErrorHold(string Mensaje, int Indice)
+        {
+            using (SqlConnection connection = new SqlConnection(bd.connectionString))
+            {
+               
+                connection.Open();
+
+                SqlCommand command = connection.CreateCommand();
+                SqlTransaction transaction;
+
+                transaction = connection.BeginTransaction("trnscBitacoraError");
+                command.Connection = connection;
+                command.Transaction = transaction;
+
+                try
+                {
+
+                    BITACORA_ERROR_TICKET bitacora = new BITACORA_ERROR_TICKET { mensaje = Mensaje, tipo_msg = "H" };
+
+                    command.Parameters.Clear();
+
+                    command.Parameters.AddWithValue("@mensaje", bitacora.mensaje);
+                    command.Parameters.AddWithValue("@tipo_mensaje", bitacora.tipo_msg);
+                    command.Parameters.Add("@ID", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
+
+
+                    msSQL = $@"
+                    Insert Into TICKET..BITACORA_ERRORES_TICKET 
+                    (fecha, mensaje, tipo_msg) 
+                    values 
+                    (getdate(), @mensaje, @tipo_mensaje) SET @ID = SCOPE_IDENTITY()";
+
+                    command.CommandText = msSQL;
+                    
+                    int resultado = command.ExecuteNonQuery();
+                    var identity = command.Parameters["@ID"].Value;
+
+
+                    if (Indice > -1)
+                    {
+                        msSQL = @"
+                            Insert Into TICKET..ERROR_HOLDS 
+                            values (@identity, @usuario, @agencia, @cuenta, @sufijo, @desc1, @desc2, @desc3, @desc4, @fecha1, @fecha2, @monto, @fechaequation, @hold, @tipotransc)";
+
+                        command.CommandText = msSQL;
+                        command.Parameters.Clear();
+
+                        command.Parameters.AddWithValue("@identity", identity);
+                        command.Parameters.AddWithValue("@usuario", MaRegistros[Indice].Usuario);
+                        command.Parameters.AddWithValue("@agencia", MaRegistros[Indice].Agencia);
+                        command.Parameters.AddWithValue("@cuenta", MaRegistros[Indice].Cuenta);
+                        command.Parameters.AddWithValue("@sufijo", MaRegistros[Indice].Sufijo);
+                        command.Parameters.AddWithValue("@desc1", MaRegistros[Indice].Desc1);
+                        command.Parameters.AddWithValue("@desc2", MaRegistros[Indice].Desc2);
+                        command.Parameters.AddWithValue("@desc3", MaRegistros[Indice].Desc3);
+                        command.Parameters.AddWithValue("@desc4", MaRegistros[Indice].Desc4);
+                        command.Parameters.AddWithValue("@fecha1", MaRegistros[Indice].Fecha1.ToString("yyyy-MM-dd hh:mm:ss"));
+                        command.Parameters.AddWithValue("@fecha2", MaRegistros[Indice].Fecha2.ToString("yyyy-MM-dd hh:mm:ss"));
+                        command.Parameters.AddWithValue("@monto", MaRegistros[Indice].Monto);
+                        command.Parameters.AddWithValue("@fechaequation", MaRegistros[Indice].Fechaequation);
+                        command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+                        command.Parameters.AddWithValue("@tipotransc", MaRegistros[Indice].TipoTransaccion);
+
+                        resultado = command.ExecuteNonQuery();
+
+                        transaction.Commit();
+
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                }
+            }
+        }
+
         public void EstableceParametros()
         {
             encriptacion = new Encriptacion();
@@ -321,6 +495,16 @@ namespace Biblioteca_InterfazRetenciones.Processes
         private void Messahe_Status(string mensaje)
         {
             lblStatus.Text = mensaje;
+        }
+
+        public object GetValueDr(SqlDataReader dr)
+        {
+            while(dr.Read())
+            {
+                return dr.GetValue(0);
+            }
+            return null;
+
         }
 
 
