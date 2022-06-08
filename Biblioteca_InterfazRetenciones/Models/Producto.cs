@@ -14,6 +14,8 @@ namespace Biblioteca_InterfazRetenciones.Models
         public Int16 producto { get; set; }
         public Int16 status_producto { get; set; }
         public Int16 concepto_definido { get; set; }
+        public Int32 producto_contratado { get; set; }
+        public DateTime fecha_vencimiento { get; set; }
 
         public static Producto GteProducto(SqlDataReader dr, FAHLDLA  fAHLDLA = null)
         {

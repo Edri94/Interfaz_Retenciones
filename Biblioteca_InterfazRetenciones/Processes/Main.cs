@@ -336,18 +336,150 @@ namespace Biblioteca_InterfazRetenciones.Processes
                             //Inserta el BITACORA_ERROR_HOLD
                             RegistraErrorHold("No existe la Cuenta Eje " + lsCtaCompleta, lnDatosHOLD);
                         }
-                        else
-                        {
-                            
-                            productos.Add(Producto.GteProducto(dr_1, MaRegistros[lnDatosHOLD]));
-                        }
+                       
+                        productos.Add(Producto.GteProducto(dr_1, MaRegistros[lnDatosHOLD]));
 
                         dr_1.Close();
-                        
+
+                        mnAgencia = productos[lnDatosHOLD].agencia;
+                        mnProducto = productos[lnDatosHOLD].producto;
+                        mnStatus = productos[lnDatosHOLD].status_producto;
+                        mnConcepto = productos[lnDatosHOLD].concepto_definido;
+
+
+                      
+
+
+                        //Si el Hold No es Valido (NO se guarda en Ticket), solo lo marca
+                        if(lbHOLDValido ==false)
+                        {
+                            ActualizaHOLD_AS400(lbHOLDValido);
+                        }
+                        //Valida si existe el reg en Tkt antes de insertarlo
+                        else
+                        {
+                            if(lsUsuario != "TK@@")
+                            {
+                                GuardaHolds(lnDatosHOLD);
+                            }
+                            else
+                            {
+
+                            }
+                        }
 
                     }
                 }
 
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+        private void GuardaHolds(int Indice)
+        {
+            try
+            {
+                int lnProdCont;
+                string lsFechaVenc;
+                int lnStatusProducto;
+                bool lbHOLDValido;
+                int lnStatusProd;
+                int LnAgencia;
+
+                lbHOLDValido = false;
+
+                if(MaRegistros[Indice].TipoTransaccion != "A")
+                {
+
+                    msSQL = $@"
+                        Select  
+	                        pc.producto_contratado
+	                        ,  pc.fecha_vencimiento
+	                        ,  pc.status_producto  
+                        from  
+	                        {msDBName}..HOLD h
+	                        INNER JOIN {msDBName}..PRODUCTO_CONTRATADO pc ON h.producto_contratado  = pc.producto_contratado
+	                        INNER JOIN {msDBName}..PRODUCTO pr ON pc.producto = pr.producto  
+                        where  
+	                        pr.producto_global = 12  
+	                        and 
+	                        fecha_vencimiento >= convert(char(10),getdate(),110)  
+	                        and 
+	                        pc.agencia = {mnAgencia} 
+	                        and 
+	                        pc.cuenta_cliente = '{MaRegistros[Indice].Cuenta}' 
+	                        and 
+	                        h.hold = {MaRegistros[Indice].Hold};
+                    ";
+
+                    SqlDataReader dr =  bd.ejecutarConsulta(msSQL);
+
+                    if(dr != null)
+                    {
+                        while(dr.Read())
+                        {
+                            lnProdCont = dr.GetInt32(0);
+                            lsFechaVenc = dr.GetDateTime(1).ToString();
+                            lnStatusProducto = dr.GetInt32(2);
+
+                            msSQL = $"Select status_producto from {msDBName}..PRODUCTO_CONTRATADO  where producto_contratado  = {lnProdCont}";
+                        }
+                        dr.Close();
+
+                        dr = bd.ejecutarConsulta(msSQL);
+
+                        if (dr == null)
+                        {
+                            RegistraErrorHold("Ocurrio un error al obtener el status del Hold.", Indice);
+                            ActualizaHOLD_AS400(lbHOLDValido);
+                        }
+                        else
+                        {
+                            lnStatusProd = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "lnStatusProd" }, dr).Value.ToString());
+                        }
+                        
+                    }
+                    else
+                    {
+                        RegistraErrorHold("Al Buscar Hold en TKT para Mantenimiento", Indice);
+                        ActualizaHOLD_AS400(lbHOLDValido);
+                    }
+
+                   
+
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+        private void ActualizaHOLD_AS400(bool Valido)
+        {
+            try
+            {
+                msSQL400 = "UPDATE " + msLibAS400 + "." + lsArchivoHOLDAS400;
+
+                //Si el Hold se realizo la modificacion
+                string[] letras = { "A", "M", "D" };
+                if(Valido == true && Funcion.Contains(lsTipoTranHold, letras))
+                {
+                    msSQL400 += $" set HPROC = '{lsTipoTranHold}' ";
+                }
+                else
+                {
+                    msSQL400 += $" set HPROC = 'X' ";
+                }
+
+                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}' AND HHLDN = {MaRegistros[lnDatosHOLD].Hold} AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}' AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
+
+                int resultado = as400.EjecutaActualizacion(msSQL400);
             }
             catch (Exception ex)
             {

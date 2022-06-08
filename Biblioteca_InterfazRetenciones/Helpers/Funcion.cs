@@ -154,5 +154,14 @@ namespace Biblioteca_InterfazRetenciones.Helpers
 
             return cadena;
         }
+
+        public static bool Contains(string cadena, string[] busqueda)
+        {
+            foreach (string texto in busqueda)
+            {
+                return cadena.Contains(texto);
+            }
+            return false;
+        }
     }
 }
