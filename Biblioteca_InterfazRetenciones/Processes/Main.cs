@@ -380,17 +380,18 @@ namespace Biblioteca_InterfazRetenciones.Processes
         }
 
         private void GuardaHolds(int Indice)
-        {
+        {          
             try
             {
-                int lnProdCont;
-                string lsFechaVenc;
-                int lnStatusProducto;
-                bool lbHOLDValido;
-                int lnStatusProd;
-                int LnAgencia;
+                int lnProdCont = 0;
+                string lsFechaVenc = String.Empty;
+                int lnStatusProducto = 0;
+                bool lbHOLDValido = false; ;
+                int lnStatusProd = 0;
+                int LnAgencia = 0;
+                DateTime fecha_servidor;
 
-                lbHOLDValido = false;
+                SqlDataReader dr;
 
                 if(MaRegistros[Indice].TipoTransaccion != "A")
                 {
@@ -416,7 +417,7 @@ namespace Biblioteca_InterfazRetenciones.Processes
 	                        h.hold = {MaRegistros[Indice].Hold};
                     ";
 
-                    SqlDataReader dr =  bd.ejecutarConsulta(msSQL);
+                    dr =  bd.ejecutarConsulta(msSQL);
 
                     if(dr != null)
                     {
@@ -449,9 +450,268 @@ namespace Biblioteca_InterfazRetenciones.Processes
                         ActualizaHOLD_AS400(lbHOLDValido);
                     }
 
-                   
 
-                }
+                    //Inicia Transacción para registrar el Hold en Ticket y marcar en 400
+                    using (SqlConnection connection = new SqlConnection(bd.connectionString))
+                    {
+
+                        connection.Open();
+
+                        SqlCommand command = connection.CreateCommand();
+                        SqlTransaction transaction;
+
+                        transaction = connection.BeginTransaction("trnscGuardaHolds");
+                        command.Connection = connection;
+                        command.Transaction = transaction;
+
+                        switch (MaRegistros[Indice].TipoTransaccion)
+                        {
+                            case "A":
+                                msSQL = $@"
+                                    Insert into {msDBName}..PRODUCTO_CONTRATADO 
+                                    (producto, cuenta_cliente, clave_producto_contratado, fecha_contratacion, fecha_vencimiento, status_producto, agencia) 
+                                    values 
+                                    (@producto, @cuenta_cliente, @clave_producto_contratado, @fecha_contratacion, @fecha_vencimiento, @status_producto, @agencia)
+                                    SET @ID = SCOPE_IDENTITY()
+                                ";
+
+                                command.Parameters.Clear();
+
+                                command.Parameters.AddWithValue("@producto", mnProducto);
+                                command.Parameters.AddWithValue("@cuenta_cliente",  MaRegistros[Indice].Cuenta);
+                                command.Parameters.AddWithValue("@clave_producto_contratado", " ");
+                                command.Parameters.AddWithValue("@fecha_contratacion", MaRegistros[Indice].Fecha1 + " 00:00:00");
+                                command.Parameters.AddWithValue("@fecha_vencimiento", MaRegistros[Indice].Fecha2 + " 00:00:00");
+                                command.Parameters.AddWithValue("@status_producto", mnStatus);
+                                command.Parameters.AddWithValue("@agencia", mnAgencia);                             
+                                command.Parameters.Add("@ID", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
+
+                                command.CommandText = msSQL;
+
+
+                                if (command.ExecuteNonQuery() < 1)
+                                {
+                                    RegistraErrorHold("Al insertar en PRODUCTO_CONTRATADO ", Indice);
+                                    ActualizaHOLD_AS400(lbHOLDValido);
+                                }
+                                else
+                                {
+                                    lnProdCont = Int32.Parse(command.Parameters["@ID"].Value.ToString());
+
+                                    msSQL = $@"
+                                        insert into {msDBName}..HOLD 
+                                        (producto_contratado, fecha_equation, hold, descripcion1, descripcion2, descripcion3, descripcion4,usuario_equation,secuencia_hold) 
+                                        values 
+                                        (@producto_contratado, @fecha_equation, @hold, @descripcion1, @descripcion2, @descripcion3, @descripcion4, @usuario_equation, @secuencia_hold)";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                    command.Parameters.AddWithValue("@fecha_equation", MaRegistros[Indice].Fechaequation + " " + Funcion.Mid(MaRegistros[Indice].Hora.ToString(), 1, 6));
+                                    command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+                                    command.Parameters.AddWithValue("@descripcion1", MaRegistros[Indice].Desc1);
+                                    command.Parameters.AddWithValue("@descripcion2", MaRegistros[Indice].Desc2);
+                                    command.Parameters.AddWithValue("@descripcion3", MaRegistros[Indice].Desc3);
+                                    command.Parameters.AddWithValue("@descripcion4", MaRegistros[Indice].Desc4);
+                                    command.Parameters.AddWithValue("@usuario_equation", MaRegistros[Indice].Usuario);
+                                    command.Parameters.AddWithValue("@secuencia_hold", MaRegistros[Indice].NumeroSecuencia);
+
+                                    command.CommandText = msSQL;
+
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Al insertar en la tabla HOLD", Indice);
+
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+                                    }
+                                    else
+                                    {
+
+                                        msSQL = $@" 
+                                            insert into TICKET..CONCEPTO
+                                            (producto_contratado, concepto_definido, valor_concepto)
+                                            values
+                                            (@producto_contratado, @concepto_definido, @valor_concepto)";
+
+                                        command.Parameters.Clear();
+
+                                        command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                        command.Parameters.AddWithValue("@producto_contratado", mnConcepto);
+                                        command.Parameters.AddWithValue("@producto_contratado", MaRegistros[Indice].Monto);
+
+                                        command.CommandText = msSQL;
+
+                                        if (command.ExecuteNonQuery() < 0)
+                                        {
+                                            RegistraErrorHold("Al insertar en la tabla CONCEPTO", Indice);
+                                            ActualizaHOLD_AS400(lbHOLDValido);
+                                        }
+                                    }
+
+                                }
+
+                                msSQL = $"Select prefijo_agencia from CATALOGOS..AGENCIA AG where agencia = {mnAgencia}";
+
+                                dr = bd.ejecutarConsulta(msSQL);
+
+                                if (dr == null)
+                                {
+                                    RegistraErrorHold("Ocurrio un error al Seleccionar la agencia." + lnProdCont, Indice);
+                                    ActualizaHOLD_AS400(lbHOLDValido);
+                                }
+                                else
+                                {
+                                    LnAgencia = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "LnAgencia" }, dr).Value.ToString());
+
+                                    msSQL = "insert into " + msDBName + "..EVENTO_PRODUCTO (";
+                                    msSQL = msSQL + "producto_contratado, ";
+                                    msSQL = msSQL + "fecha_evento, ";
+                                    msSQL = msSQL + "status_producto , ";
+                                    msSQL = msSQL + "comentario_evento, ";
+                                    msSQL = msSQL + "usuario";
+                                    msSQL = msSQL + ") values (" + lnProdCont + ",getdate()," + Funcion.Mid(LnAgencia.ToString(), 1, 2) + "02" + ",'" + "Alta de Hold " + " " + MaRegistros[Indice].Usuario + "'," + 133 + ")";
+
+                                    command.CommandText = msSQL;
+
+                                    dr = bd.ejecutarConsulta(msSQL);
+
+                                    if(dr == null)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al insertar el Evento de alta de Hold." + lnProdCont, Indice);             
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+                                    }
+
+                                }                           
+                                break;
+
+                            case "M":
+                                fecha_servidor = DateTime.Parse(bd.obtenerFechaServidor());
+                                if (DateTime.ParseExact(lsFechaVenc, "yyyyMMdd", null) != MaRegistros[Indice].Fecha2)
+                                {
+                                    if(MaRegistros[Indice].Fecha2 <= fecha_servidor && DateTime.ParseExact(lsFechaVenc, "yyyyMMdd", null) > fecha_servidor)
+                                    {
+                                        msSQL = $"UPDATE {msDBName}..PRODUCTO_CONTRATADO set fecha_vencimiento = @fecha_vencimiento, status_producto = @status_producto WHERE producto_contratado = @producto_contratado";
+
+                                        command.Parameters.Clear();
+
+                                        command.Parameters.AddWithValue("@fecha_vencimiento", MaRegistros[Indice].Fecha2);
+                                        command.Parameters.AddWithValue("@status_producto", Funcion.Mid(lnStatusProducto.ToString(), 1, 2) + "22");
+                                        command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+
+                                        command.CommandText = msSQL;
+
+                                        if(command.ExecuteNonQuery() < 0)
+                                        {
+                                            RegistraErrorHold("Ocurrio un error al actualizar los datos del Hold.", Indice);
+                                            ActualizaHOLD_AS400(lbHOLDValido);
+
+                                        }
+
+                                    }
+                                    else if(MaRegistros[Indice].Fecha2 > fecha_servidor && DateTime.ParseExact(lsFechaVenc, "yyyyMMdd", null) <= fecha_servidor)
+                                    {
+                                        msSQL = $"UPDATE {msDBName}..PRODUCTO_CONTRATADO SET fecha_vencimiento = @fecha_vencimiento, status_producto = @status_producto WHERE producto_contratado = @producto_contratado";
+
+                                        command.Parameters.Clear();
+
+                                        command.Parameters.AddWithValue("@fecha_vencimiento", MaRegistros[Indice].Fecha2);
+                                        command.Parameters.AddWithValue("@status_producto", Funcion.Mid(lnStatusProducto.ToString(), 1, 2) + "02");
+                                        command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+
+                                        command.CommandText = msSQL;
+
+                                        if (command.ExecuteNonQuery() < 0)
+                                        {
+                                            RegistraErrorHold("Ocurrio un error al actualizar los datos del Hold.", Indice);
+                                            ActualizaHOLD_AS400(lbHOLDValido);
+
+                                        }
+                                    }
+                                }
+                                else 
+                                {
+                                    msSQL = $"UPDATE {msDBName}..PRODUCTO_CONTRATADO SET fecha_vencimiento = @fecha_vencimiento WHERE producto_contratado = @producto_contratado";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@fecha_vencimiento", MaRegistros[Indice].Fecha2);
+                                    command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+
+                                    command.CommandText = msSQL;
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al actualizar los datos del Hold.", Indice);
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+
+                                    }
+
+                                    msSQL = $"UPDATE {msDBName}..PRODUCTO_CONTRATADO SET fecha_contratacion = @fecha_contratacion WHERE producto_contratado = @producto_contratado";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@fecha_vencimiento", MaRegistros[Indice].Fecha1);
+                                    command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+
+                                    command.CommandText = msSQL;
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al actualizar los datos del Hold.", Indice);
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+
+                                    }
+
+                                    msSQL = $"UPDATE {msDBName}..HOLD SET descripcion1 = @descripcion1, descripcion2 = @descripcion2, descripcion3 = @descripcion3, descripcion4 = @descripcion4 WHERE producto_contratado = @producto_contratado AND hold = @hold";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@descripcion1", MaRegistros[Indice].Desc1);
+                                    command.Parameters.AddWithValue("@descripcion2", MaRegistros[Indice].Desc2);
+                                    command.Parameters.AddWithValue("@descripcion3", MaRegistros[Indice].Desc3);
+                                    command.Parameters.AddWithValue("@descripcion4", MaRegistros[Indice].Desc4);
+                                    command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                    command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+
+                                    command.CommandText = msSQL;
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al actualizar en la tabla Hold.", Indice);
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+                                    }
+
+                                    msSQL = $"UPDATE {msDBName}..CONCEPTO SET valor_concepto = @valor_concepto WHERE producto_contratado = @producto_contratado AND concepto_definido = @concepto_definido";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@valor_concepto", MaRegistros[Indice].Monto);
+                                    command.Parameters.AddWithValue("@producto_contratado",lnProdCont);
+                                    command.Parameters.AddWithValue("@concepto_definido", mnConcepto);
+
+                                    command.CommandText = msSQL;
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al actualizar en la tabla CONCEPTO el Mant. Hold.", Indice);
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+                                    }
+
+
+                                }
+
+
+                                break;
+                       
+                            default:
+                                break;
+                        }
+
+
+                    }
+
+                 }
             }
             catch (Exception ex)
             {
