@@ -155,9 +155,11 @@ namespace Biblioteca_InterfazRetenciones.Processes
                 mnFirstTime = 1;
 
 
-                Message_PnlStatus("CONECTADO....");
-
+                Message_PnlStatus("CONECTANDO....");
+                Start();
+                Message_PnlStatus("EN LINEA....");
                 RecibeHoldsLA();
+                Detener();
 
             }
 
@@ -165,6 +167,81 @@ namespace Biblioteca_InterfazRetenciones.Processes
             
 
 
+        }
+
+        private void Detener()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Start()
+        {
+            if(!cblmc_ObtieneUsuario(msUSREQUGC, mn_numuserGC))
+            {
+                MessageBox.Show("No fue Posible Obtener el Usuario  de la Agencia Gran Caimán", "Obtención de Usuario");
+            }
+            else
+            {
+                msClaveModParams = ValorParametro("INTFMOVS_PARAMS");
+            }
+        }
+
+        private string ValorParametro(string Parametro)
+        {
+            string ls_sql = String.Empty;
+            string ValorParametro = String.Empty;
+            try
+            {
+                ls_sql = $"Select valor from PARAMETRIZACION where codigo = '{Parametro}'";
+
+                SqlDataReader dr = bd.ejecutarConsulta(ls_sql);
+
+                if(dr != null)
+                {
+                    ValorParametro = bd.LLenarMapToQuery(new Map { Key = "valor" }, dr).Value.ToString();
+                }
+                else
+                {
+                    MessageBox.Show($"Error al Obtener Dato Parametrizado. {Environment.NewLine} Notifique al Departamento de Sistemas! {Environment.NewLine} Código de Parametro: {Parametro}", "Error");
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            return ValorParametro;
+        }
+
+        private bool cblmc_ObtieneUsuario(string ps_nombre, int pn_usuarioGC)
+        {
+            bool cblmc_ObtieneUsuario = false;
+            string lsSQL = String.Empty;
+
+            try
+            {
+                pn_usuarioGC = -1;
+                lsSQL = $"SELECT usuario FROM CATALOGOS..{gs_Usuario} WHERE login = '{ps_nombre}'";
+
+                SqlDataReader dr = bd.ejecutarConsulta(lsSQL);
+
+                if(dr != null)
+                {
+                    pn_usuarioGC = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "usuario" }, dr).Value.ToString());
+                    cblmc_ObtieneUsuario = true;
+                }
+                else
+                {
+                    cblmc_ObtieneUsuario = false;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+            return cblmc_ObtieneUsuario;
         }
 
         private void RecibeHoldsLA()
@@ -393,7 +470,9 @@ namespace Biblioteca_InterfazRetenciones.Processes
 
                 SqlDataReader dr;
 
-                if(MaRegistros[Indice].TipoTransaccion != "A")
+                fecha_servidor = DateTime.Parse(bd.obtenerFechaServidor());
+
+                if (MaRegistros[Indice].TipoTransaccion != "A")
                 {
 
                     msSQL = $@"
@@ -585,8 +664,7 @@ namespace Biblioteca_InterfazRetenciones.Processes
                                 }                           
                                 break;
 
-                            case "M":
-                                fecha_servidor = DateTime.Parse(bd.obtenerFechaServidor());
+                            case "M":                              
                                 if (DateTime.ParseExact(lsFechaVenc, "yyyyMMdd", null) != MaRegistros[Indice].Fecha2)
                                 {
                                     if(MaRegistros[Indice].Fecha2 <= fecha_servidor && DateTime.ParseExact(lsFechaVenc, "yyyyMMdd", null) > fecha_servidor)
@@ -697,16 +775,68 @@ namespace Biblioteca_InterfazRetenciones.Processes
                                         RegistraErrorHold("Ocurrio un error al actualizar en la tabla CONCEPTO el Mant. Hold.", Indice);
                                         ActualizaHOLD_AS400(lbHOLDValido);
                                     }
+                                    msSQL = $"insert into {msDBName}..EVENTO_PRODUCTO(producto_contratado, fecha_evento, status_producto, comentario_evento, usuario) values( @producto_contratado, @fecha_evento, @status_producto, @comentario_evento, @usuario)";
+
+                                    command.Parameters.Clear();
+
+                                    command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                    command.Parameters.AddWithValue("@fecha_evento", "getdate()");
+                                    command.Parameters.AddWithValue("@status_producto", lnStatusProd);
+                                    command.Parameters.AddWithValue("@comentario_evento", "Mantenimiento Automático de Hold " + " " + MaRegistros[Indice].Usuario );
+                                    command.Parameters.AddWithValue("@usuario", 133);
+
+                                    command.CommandText = msSQL;
+
+                                    if (command.ExecuteNonQuery() < 0)
+                                    {
+                                        RegistraErrorHold("Ocurrio un error al insertar el Evento de Manto. de Hold." + lnProdCont, Indice);
+                                        ActualizaHOLD_AS400(lbHOLDValido);
+                                    }
 
 
                                 }
-
-
                                 break;
-                       
-                            default:
+
+                            case "D":
+                                msSQL = $"UPDATE {msDBName}..PRODUCTO_CONTRATADO set status_producto = @status_producto WHERE producto_contratado  = @producto_contratado AND cuenta_cliente = @cuenta_cliente AND agencia = @agencia AND '{MaRegistros[Indice].Fecha2.ToString("yyyy-MM-dd hh:mm:ss")}' >= '{fecha_servidor}'";
+
+                                command.Parameters.Clear();
+
+                                command.Parameters.AddWithValue("@status_producto", Funcion.Mid(lnStatusProd.ToString(), 1, 2) + 42);
+                                command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                command.Parameters.AddWithValue("@cuenta_cliente", MaRegistros[Indice].Cuenta);
+                                command.Parameters.AddWithValue("@agencia", "Mantenimiento Automático de Hold " + " " + MaRegistros[Indice].Usuario);
+
+                                command.CommandText = msSQL;
+
+                                if (command.ExecuteNonQuery() < 0)
+                                {
+                                    RegistraErrorHold("Ocurrio un error al actualizar los datos del Hold.", Indice);
+                                    ActualizaHOLD_AS400(lbHOLDValido);
+                                }
+
+                                msSQL = $"insert into {msDBName}..EVENTO_PRODUCTO(producto_contratado, fecha_evento, status_producto, comentario_evento, usuario) usuario(@producto_contratado, @fecha_evento, @status_producto, @comentario_evento, @usuario)";
+
+                                command.Parameters.Clear();
+
+                                command.Parameters.AddWithValue("@producto_contratado", lnProdCont);
+                                command.Parameters.AddWithValue("@fecha_evento", "getdate()");
+                                command.Parameters.AddWithValue("@status_producto", Funcion.Mid(lnStatusProd.ToString(), 1, 2) + 42);
+                                command.Parameters.AddWithValue("@comentario_evento", "Cancelación Automática de Hold " + " " + MaRegistros[Indice].Usuario);
+                                command.Parameters.AddWithValue("@usuario", 133);
+
+                                command.CommandText = msSQL;
+
+                                if (command.ExecuteNonQuery() < 0)
+                                {
+                                    RegistraErrorHold("Ocurrio un error al insertar el Evento de Manto. de Hold." + lnProdCont, Indice);
+                                    ActualizaHOLD_AS400(lbHOLDValido);
+                                }
+
                                 break;
                         }
+
+                        ActualizaHOLD_AS400(lbHOLDValido);
 
 
                     }
