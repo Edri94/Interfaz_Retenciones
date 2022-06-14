@@ -3,4 +3,3 @@ C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Biblioteca_Interfaz
 C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Biblioteca_InterfazRetenciones\bin\Debug\Biblioteca_InterfazRetenciones.pdb
 C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Biblioteca_InterfazRetenciones\obj\Debug\Biblioteca_InterfazRetenciones.dll
 C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Biblioteca_InterfazRetenciones\obj\Debug\Biblioteca_InterfazRetenciones.pdb
-C:\Users\MI05332\source\repos\Biblioteca_InterfazRetenciones\Biblioteca_InterfazRetenciones\obj\Debug\Biblioteca_InterfazRetenciones.csproj.AssemblyReference.cache

@@ -185,6 +185,10 @@ namespace Biblioteca_InterfazRetenciones.Data
                             case "int":
                                 mapa.Value = dr.GetInt32(0);
                                 break;
+                            
+                            case "smallint":
+                                mapa.Value = dr.GetInt16(0);
+                                break;
 
                             default:
                                 mapa.Value = dr.GetString(0);
