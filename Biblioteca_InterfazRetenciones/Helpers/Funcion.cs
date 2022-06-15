@@ -163,5 +163,13 @@ namespace Biblioteca_InterfazRetenciones.Helpers
             }
             return false;
         }
+
+        public static bool IsNumeric(string cadena)
+        {
+            int n;
+            bool isNumeric = int.TryParse(cadena, out n);
+
+            return isNumeric;
+        }
     }
 }

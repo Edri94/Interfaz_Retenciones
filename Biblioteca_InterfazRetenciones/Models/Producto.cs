@@ -17,7 +17,7 @@ namespace Biblioteca_InterfazRetenciones.Models
         public Int32 producto_contratado { get; set; }
         public DateTime fecha_vencimiento { get; set; }
 
-        public static Producto GteProducto(SqlDataReader dr, FAHLDLA  fAHLDLA = null)
+        public static Producto GetProducto(SqlDataReader dr, FAHLDLA  fAHLDLA = null)
         {
             Producto pr = new Producto();
             try

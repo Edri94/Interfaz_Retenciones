@@ -144,7 +144,48 @@ namespace Biblioteca_InterfazRetenciones.Data
             }
         }
 
-        public int EjecutaActualizacion(string query)
+        public Map LLenarMapToQuery(Map mapa, OdbcDataReader dr)
+        {
+            try
+            {
+                if (dr.FieldCount == 1)
+                {
+                    while (dr.Read())
+                    {
+                        switch (mapa.Type)
+                        {
+                            case "string":
+                                mapa.Value = dr.GetString(0);
+                                break;
+
+                            case "int":
+                                mapa.Value = dr.GetInt32(0);
+                                break;
+
+                            case "smallint":
+                                mapa.Value = dr.GetInt16(0);
+                                break;
+
+                            default:
+                                mapa.Value = dr.GetString(0);
+                                break;
+                        }
+
+                    }
+                }
+                dr.Close();
+                return mapa;
+            }
+            catch (Exception ex)
+            {
+                Log.Escribe(ex);
+                dr.Close();
+                return null;
+            }
+        }
+
+
+            public int EjecutaActualizacion(string query)
         {
             try
             {

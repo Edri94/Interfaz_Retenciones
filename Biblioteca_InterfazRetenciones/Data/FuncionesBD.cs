@@ -278,7 +278,7 @@ namespace Biblioteca_InterfazRetenciones.Data
         {
             try
             {
-                string query = "select convert(varchar, GETDATE(), 105) as [fecha_actual]";
+                string query = "select FORMAT(GETDATE(), 'yyyy-MM-dd hh:mm:ss')  as [fecha_actual]";
                 SqlDataReader dr = ejecutarConsulta(query);
 
                 string fecha_actual = string.Empty;

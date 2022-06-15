@@ -56,25 +56,25 @@ namespace Interfaz_Retenciones
             this.pbrMovimientos = new System.Windows.Forms.ProgressBar();
             this.lblStatus = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.txtDBPswd = new System.Windows.Forms.TextBox();
+            this.txtDBUser = new System.Windows.Forms.TextBox();
+            this.txtDBName = new System.Windows.Forms.TextBox();
+            this.txtDBSrvr = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label5 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
-            this.txtDBSrvr = new System.Windows.Forms.TextBox();
-            this.txtDBName = new System.Windows.Forms.TextBox();
-            this.txtDBUser = new System.Windows.Forms.TextBox();
-            this.txtDBPswd = new System.Windows.Forms.TextBox();
-            this.label12 = new System.Windows.Forms.Label();
-            this.label13 = new System.Windows.Forms.Label();
-            this.label14 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
-            this.txtDSN400 = new System.Windows.Forms.TextBox();
-            this.txtNextHoldLA = new System.Windows.Forms.TextBox();
-            this.txtUser400 = new System.Windows.Forms.TextBox();
+            this.label14 = new System.Windows.Forms.Label();
+            this.label13 = new System.Windows.Forms.Label();
             this.txtPswd400 = new System.Windows.Forms.TextBox();
+            this.txtUser400 = new System.Windows.Forms.TextBox();
             this.txtPeriodoHoldLA = new System.Windows.Forms.TextBox();
+            this.txtNextHoldLA = new System.Windows.Forms.TextBox();
+            this.txtDSN400 = new System.Windows.Forms.TextBox();
+            this.label12 = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.groupBox1.SuspendLayout();
@@ -352,6 +352,70 @@ namespace Interfaz_Retenciones
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Comunicacion con SQL Server";
             // 
+            // txtDBPswd
+            // 
+            this.txtDBPswd.Location = new System.Drawing.Point(198, 150);
+            this.txtDBPswd.Name = "txtDBPswd";
+            this.txtDBPswd.Size = new System.Drawing.Size(267, 26);
+            this.txtDBPswd.TabIndex = 1;
+            // 
+            // txtDBUser
+            // 
+            this.txtDBUser.Location = new System.Drawing.Point(198, 111);
+            this.txtDBUser.Name = "txtDBUser";
+            this.txtDBUser.Size = new System.Drawing.Size(267, 26);
+            this.txtDBUser.TabIndex = 1;
+            // 
+            // txtDBName
+            // 
+            this.txtDBName.Location = new System.Drawing.Point(198, 72);
+            this.txtDBName.Name = "txtDBName";
+            this.txtDBName.Size = new System.Drawing.Size(267, 26);
+            this.txtDBName.TabIndex = 1;
+            // 
+            // txtDBSrvr
+            // 
+            this.txtDBSrvr.Location = new System.Drawing.Point(198, 33);
+            this.txtDBSrvr.Name = "txtDBSrvr";
+            this.txtDBSrvr.Size = new System.Drawing.Size(267, 26);
+            this.txtDBSrvr.TabIndex = 1;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(17, 157);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(159, 20);
+            this.label6.TabIndex = 0;
+            this.label6.Text = "Password de Usuario";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(17, 118);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(129, 20);
+            this.label5.TabIndex = 0;
+            this.label5.Text = "Login de Usuario";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(17, 79);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(112, 20);
+            this.label4.TabIndex = 0;
+            this.label4.Text = "Base de datos";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(17, 40);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(152, 20);
+            this.label3.TabIndex = 0;
+            this.label3.Text = "Nombre del Servidor";
+            // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.label15);
@@ -370,87 +434,14 @@ namespace Interfaz_Retenciones
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Comunicacion con AS400";
             // 
-            // label3
+            // label15
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(17, 40);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(152, 20);
-            this.label3.TabIndex = 0;
-            this.label3.Text = "Nombre del Servidor";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(17, 79);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(112, 20);
-            this.label4.TabIndex = 0;
-            this.label4.Text = "Base de datos";
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(17, 118);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(129, 20);
-            this.label5.TabIndex = 0;
-            this.label5.Text = "Login de Usuario";
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(17, 157);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(159, 20);
-            this.label6.TabIndex = 0;
-            this.label6.Text = "Password de Usuario";
-            // 
-            // txtDBSrvr
-            // 
-            this.txtDBSrvr.Location = new System.Drawing.Point(198, 33);
-            this.txtDBSrvr.Name = "txtDBSrvr";
-            this.txtDBSrvr.Size = new System.Drawing.Size(267, 26);
-            this.txtDBSrvr.TabIndex = 1;
-            // 
-            // txtDBName
-            // 
-            this.txtDBName.Location = new System.Drawing.Point(198, 72);
-            this.txtDBName.Name = "txtDBName";
-            this.txtDBName.Size = new System.Drawing.Size(267, 26);
-            this.txtDBName.TabIndex = 1;
-            // 
-            // txtDBUser
-            // 
-            this.txtDBUser.Location = new System.Drawing.Point(198, 111);
-            this.txtDBUser.Name = "txtDBUser";
-            this.txtDBUser.Size = new System.Drawing.Size(267, 26);
-            this.txtDBUser.TabIndex = 1;
-            // 
-            // txtDBPswd
-            // 
-            this.txtDBPswd.Location = new System.Drawing.Point(198, 150);
-            this.txtDBPswd.Name = "txtDBPswd";
-            this.txtDBPswd.Size = new System.Drawing.Size(267, 26);
-            this.txtDBPswd.TabIndex = 1;
-            // 
-            // label12
-            // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(17, 50);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(107, 20);
-            this.label12.TabIndex = 0;
-            this.label12.Text = "DSN (ODBC):";
-            // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(17, 94);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(100, 20);
-            this.label13.TabIndex = 0;
-            this.label13.Text = "Biblioteca de";
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(17, 182);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(159, 20);
+            this.label15.TabIndex = 0;
+            this.label15.Text = "Password de Usuario";
             // 
             // label14
             // 
@@ -461,35 +452,14 @@ namespace Interfaz_Retenciones
             this.label14.TabIndex = 0;
             this.label14.Text = "Login de Usuario";
             // 
-            // label15
+            // label13
             // 
-            this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(17, 182);
-            this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(159, 20);
-            this.label15.TabIndex = 0;
-            this.label15.Text = "Password de Usuario";
-            // 
-            // txtDSN400
-            // 
-            this.txtDSN400.Location = new System.Drawing.Point(198, 44);
-            this.txtDSN400.Name = "txtDSN400";
-            this.txtDSN400.Size = new System.Drawing.Size(267, 26);
-            this.txtDSN400.TabIndex = 1;
-            // 
-            // txtNextHoldLA
-            // 
-            this.txtNextHoldLA.Location = new System.Drawing.Point(199, 89);
-            this.txtNextHoldLA.Name = "txtNextHoldLA";
-            this.txtNextHoldLA.Size = new System.Drawing.Size(188, 26);
-            this.txtNextHoldLA.TabIndex = 1;
-            // 
-            // txtUser400
-            // 
-            this.txtUser400.Location = new System.Drawing.Point(198, 132);
-            this.txtUser400.Name = "txtUser400";
-            this.txtUser400.Size = new System.Drawing.Size(267, 26);
-            this.txtUser400.TabIndex = 1;
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(17, 94);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(100, 20);
+            this.label13.TabIndex = 0;
+            this.label13.Text = "Biblioteca de";
             // 
             // txtPswd400
             // 
@@ -498,12 +468,47 @@ namespace Interfaz_Retenciones
             this.txtPswd400.Size = new System.Drawing.Size(267, 26);
             this.txtPswd400.TabIndex = 1;
             // 
+            // txtUser400
+            // 
+            this.txtUser400.Location = new System.Drawing.Point(198, 132);
+            this.txtUser400.Name = "txtUser400";
+            this.txtUser400.Size = new System.Drawing.Size(267, 26);
+            this.txtUser400.TabIndex = 1;
+            // 
             // txtPeriodoHoldLA
             // 
             this.txtPeriodoHoldLA.Location = new System.Drawing.Point(393, 89);
             this.txtPeriodoHoldLA.Name = "txtPeriodoHoldLA";
             this.txtPeriodoHoldLA.Size = new System.Drawing.Size(72, 26);
             this.txtPeriodoHoldLA.TabIndex = 1;
+            // 
+            // txtNextHoldLA
+            // 
+            this.txtNextHoldLA.Location = new System.Drawing.Point(199, 89);
+            this.txtNextHoldLA.Name = "txtNextHoldLA";
+            this.txtNextHoldLA.Size = new System.Drawing.Size(188, 26);
+            this.txtNextHoldLA.TabIndex = 1;
+            this.txtNextHoldLA.TextChanged += new System.EventHandler(this.txtNextHoldLA_TextChanged);
+            // 
+            // txtDSN400
+            // 
+            this.txtDSN400.Location = new System.Drawing.Point(198, 44);
+            this.txtDSN400.Name = "txtDSN400";
+            this.txtDSN400.Size = new System.Drawing.Size(267, 26);
+            this.txtDSN400.TabIndex = 1;
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(17, 50);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(107, 20);
+            this.label12.TabIndex = 0;
+            this.label12.Text = "DSN (ODBC):";
+            // 
+            // timer1
+            // 
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // Form1
             // 
