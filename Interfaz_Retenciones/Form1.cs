@@ -86,217 +86,146 @@ namespace Interfaz_Retenciones
             InitializeComponent();
         }
 
-        private void textBox3_TextChanged(object sender, EventArgs e)
-        {
 
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            main = new Main();
-
-            this.Height = 659;
-            this.Width = 784;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-
-            Init();
-        }
-
-        private void groupBox3_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        public void Init()
-        {
-            int lnWDif;
-            int lnHDif;
-            string Str_Ruta;
-
-            this.mbConexion = false;
-            Str_Ruta = "ruta app.config";
-            
-
-            EstableceParametros();
-
-            if (!Bandera)
-            {
-                Funcion.SetParameterAppSettings("BANDERA", "1", "PARAMETROS");
-            }
-            else
-            {
-
-            }
-
-            if (EstableceConexionBD() && as400.Conectar())
-            {
-                fecha_servidor = DateTime.Parse(bd.obtenerFechaServidor());
-                hora_servidor = TimeSpan.Parse(fecha_servidor.ToString("hh:mm:ss"));
-
-                txtLIB400.Text = msLibAS400;
-                txtDSN400.Text = msDSN400;
-                txtUser400.Text = msUser400;
-                txtPswd400.Text = msPswd400;
-                txtDBUser.Text = msDBuser;
-                txtDBPswd.Text = msDBPswd;
-                txtDBName.Text = msDBName;
-                txtDBSrvr.Text = msDBSrvr;
-
-                lblServer.Text = msDBSrvr;
-                lblDataBase.Text = msDBName;
-                lblDSNAS400.Text = msDSN400;
-
-                this.gsFechaSQL = bd.obtenerFechaServidor();
-
-                chkRecibeHoldsLA.Checked = (RecibeHOLDLA == "1") ? true : false;
-                txtArchivoHoldLA.Text = ArchivoHOLDS;
-                txtPeriodoHoldLA.Text = Funcion.getValueAppConfig("PERIODOHOLDLA", "PARAMETROS");
-                txtNextHoldLA.Text = Funcion.getValueAppConfig("FECHAHOLDLA", "PARAMETROS") + " 10:00";
-
-
-                mnFirstTime = 1;
-
-
-                Message_PnlStatus("CONECTANDO....");
-                Start();
-                Message_PnlStatus("EN LINEA....");
-                RecibeHoldsLA();
-                Detener();
-
-            }
-
-
-
-
-
-        }
-
-        private void Detener()
-        {
-            pnlStatus.Visible = true;
-            Message_PnlStatus("DESCONECTANDO");
-            SaveDates();
-        }
-
-        private void SaveDates()
+        /// <summary>
+        /// Actualiza archivo del AS400  FAHLDLA
+        /// </summary>
+        /// <param name="Valido"></param>
+        private void ActualizaHOLD_AS400(bool Valido)
         {
             try
             {
-                Funcion.SetParameterAppSettings("PERIODOHOLDLA", txtPeriodoHoldLA.Text, "PARAMETROS");
-                Funcion.SetParameterAppSettings("FECHAHOLDLA", txtNextHoldLA.Text, "PARAMETROS");
-            }
-            catch (Exception)
-            {
+                msSQL400 = "UPDATE " + msLibAS400 + "." + lsArchivoHOLDAS400;
 
-                throw;
-            }
-        }
-
-        private void Start()
-        {
-            if (!cblmc_ObtieneUsuario(msUSREQUGC, mn_numuserGC))
-            {
-                MessageBox.Show("No fue Posible Obtener el Usuario  de la Agencia Gran Caimán", "Obtención de Usuario");
-            }
-            else
-            {
-                msClaveModParams = ValorParametro("INTFMOVS_PARAMS");
-            }
-            pnlStatus.Visible = false;
-
-            if(DespliegaDatos())
-            {
-                timer1.Interval = 15000;
-            }
-            MovPendientes();
-        }
-
-        private bool DespliegaDatos()
-        {
-            string lsCadena;
-            int lnIndice;
-            bool despliegaDatos = false;
-
-            try
-            {
-                lblFechaSistema.Text = fecha_servidor.ToString();
-                gsFechaSQL = fecha_servidor.ToString();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-
-            return true;
-
-        }
-
-        private string ValorParametro(string Parametro)
-        {
-            string ls_sql = String.Empty;
-            string ValorParametro = String.Empty;
-            try
-            {
-                ls_sql = $"Select valor from PARAMETRIZACION where codigo = '{Parametro}'";
-
-                SqlDataReader dr = bd.ejecutarConsulta(ls_sql);
-
-                if (dr != null)
+                //Si el Hold se realizo la modificacion
+                string[] letras = { "A", "M", "D" };
+                if (Valido == true && Funcion.Contains(lsTipoTranHold, letras))
                 {
-                    ValorParametro = bd.LLenarMapToQuery(new Map { Key = "valor", Type = "string" }, dr).Value.ToString().Trim();
+                    msSQL400 += $" set HPROC = '{lsTipoTranHold}' ";
                 }
                 else
                 {
-                    MessageBox.Show($"Error al Obtener Dato Parametrizado. {Environment.NewLine} Notifique al Departamento de Sistemas! {Environment.NewLine} Código de Parametro: {Parametro}", "Error");
-                }
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-            return ValorParametro;
-        }
-
-        private bool cblmc_ObtieneUsuario(string ps_nombre, int pn_usuarioGC)
-        {
-            bool cblmc_ObtieneUsuario = false;
-            string lsSQL = String.Empty;
-
-            try
-            {
-                pn_usuarioGC = -1;
-                lsSQL = $"SELECT usuario FROM CATALOGOS..{gs_Usuario} WHERE login = '{ps_nombre}'";
-
-                SqlDataReader dr = bd.ejecutarConsulta(lsSQL);
-
-                if (dr != null)
-                {
-                    pn_usuarioGC = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "usuario", Type = "smallint" }, dr).Value.ToString());
-                    cblmc_ObtieneUsuario = true;
-                }
-                else
-                {
-                    cblmc_ObtieneUsuario = false;
+                    msSQL400 += $" set HPROC = 'X' ";
                 }
 
+                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}' AND HHLDN = {MaRegistros[lnDatosHOLD].Hold} AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}' AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
+
+                int resultado = as400.EjecutaActualizacion(msSQL400);
             }
             catch (Exception ex)
             {
+
                 throw;
             }
-
-            return cblmc_ObtieneUsuario;
         }
 
-        private void RecibeHoldsLA()
+        /// <summary>
+        /// Compara los Registros de AS400 con los registros de Ticket
+        /// </summary>
+        /// <param name="Indice"></param>
+        /// <returns></returns>
+        private bool ComparaHOLD_400Ticket(int Indice)
         {
-            RecibeHolds(1);
-            lblNextHoldLA.Text = DateTime.Parse(this.gsFechaSQL).AddMinutes(5).ToString("dd-MM-yyyy hh:mm");
+            return false;
         }
 
+        /// <summary>
+        /// Inserta un mensaje de error provocado en el sistema
+        /// </summary>
+        /// <param name="Mensaje"></param>
+        /// <param name="Indice"></param>
+        private void RegistraError(string Mensaje, int Indice)
+        {
+
+        }
+
+        /// <summary>
+        /// Inserta un mensaje de error de recepción Hold provocado en el sistema
+        /// </summary>
+        /// <param name="Mensaje">mensaje de error</param>
+        /// <param name="Indice">index de registro dodne se produjo el error</param>
+        private void RegistraErrorHold(string Mensaje, int Indice)
+        {
+            using (SqlConnection connection = new SqlConnection(bd.connectionString))
+            {
+
+                connection.Open();
+
+                SqlCommand command = connection.CreateCommand();
+                SqlTransaction transaction;
+
+                transaction = connection.BeginTransaction("trnscBitacoraError");
+                command.Connection = connection;
+                command.Transaction = transaction;
+
+                try
+                {
+
+                    BITACORA_ERROR_TICKET bitacora = new BITACORA_ERROR_TICKET { mensaje = Mensaje, tipo_msg = "H" };
+
+                    command.Parameters.Clear();
+
+                    command.Parameters.AddWithValue("@mensaje", bitacora.mensaje);
+                    command.Parameters.AddWithValue("@tipo_mensaje", bitacora.tipo_msg);
+                    command.Parameters.Add("@ID", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
+
+
+                    msSQL = $@"
+                    Insert Into TICKET..BITACORA_ERRORES_TICKET 
+                    (fecha, mensaje, tipo_msg) 
+                    values 
+                    (getdate(), @mensaje, @tipo_mensaje) SET @ID = SCOPE_IDENTITY()";
+
+                    command.CommandText = msSQL;
+
+                    int resultado = command.ExecuteNonQuery();
+                    var identity = command.Parameters["@ID"].Value;
+
+
+                    if (Indice > -1)
+                    {
+                        msSQL = @"
+                            Insert Into TICKET..ERROR_HOLDS 
+                            values (@identity, @usuario, @agencia, @cuenta, @sufijo, @desc1, @desc2, @desc3, @desc4, @fecha1, @fecha2, @monto, @fechaequation, @hold, @tipotransc)";
+
+                        command.CommandText = msSQL;
+                        command.Parameters.Clear();
+
+                        command.Parameters.AddWithValue("@identity", identity);
+                        command.Parameters.AddWithValue("@usuario", MaRegistros[Indice].Usuario);
+                        command.Parameters.AddWithValue("@agencia", MaRegistros[Indice].Agencia);
+                        command.Parameters.AddWithValue("@cuenta", MaRegistros[Indice].Cuenta);
+                        command.Parameters.AddWithValue("@sufijo", MaRegistros[Indice].Sufijo);
+                        command.Parameters.AddWithValue("@desc1", MaRegistros[Indice].Desc1);
+                        command.Parameters.AddWithValue("@desc2", MaRegistros[Indice].Desc2);
+                        command.Parameters.AddWithValue("@desc3", MaRegistros[Indice].Desc3);
+                        command.Parameters.AddWithValue("@desc4", MaRegistros[Indice].Desc4);
+                        command.Parameters.AddWithValue("@fecha1", MaRegistros[Indice].Fecha1.ToString("yyyy-MM-dd hh:mm:ss"));
+                        command.Parameters.AddWithValue("@fecha2", MaRegistros[Indice].Fecha2.ToString("yyyy-MM-dd hh:mm:ss"));
+                        command.Parameters.AddWithValue("@monto", MaRegistros[Indice].Monto);
+                        command.Parameters.AddWithValue("@fechaequation", MaRegistros[Indice].Fechaequation);
+                        command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+                        command.Parameters.AddWithValue("@tipotransc", MaRegistros[Indice].TipoTransaccion);
+
+                        resultado = command.ExecuteNonQuery();
+
+                        transaction.Commit();
+
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                }
+            }
+        }
+
+        
+        /// <summary>
+        /// Recibe los movimientos
+        /// </summary>
+        /// <param name="Agencia">numero Agencia</param>
         private void RecibeHolds(int Agencia)
         {
             try
@@ -525,225 +454,10 @@ namespace Interfaz_Retenciones
             }
         }
 
-        private void MovPendientes()
-        {
-            OdbcDataReader dr;
-            try
-            {
-                Message_Transaction("Actualizando Pendientes a Recibir.");
-                lblPendHoldsLA.Text = "0";
-
-                if(chkRecibeHoldsLA.Checked == true)
-                {
-                    msSQL400 = $"SELECT COUNT(*) FROM {msLibAS400}.{txtArchivoHoldLA.Text}  Where HPROC <> 'A' and HPROC <> 'M' and HPROC <> 'D' and HPROC <> 'U' and HPROC <> 'X' and HPROC <> 'S'";
-
-                    dr = as400.EjecutaSelect(msSQL400);
-
-                    if(dr != null)
-                    {  
-                        lblPendHoldsLA.Text = as400.LLenarMapToQuery(new Map { Key = "cuenta", Type = "int" }, dr).Value.ToString();
-                    }
-                }
-
-                mdRefreshTime = fecha_servidor.AddMinutes(5);
-                Message_Transaction("");
-
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
-        private void ActualizaHOLD_TKT(int Indice)
-        {
-            int lnProdCont = 0;
-            string lsFechaVenc = String.Empty;
-            int lnStatusProducto = 0;
-            bool lbHOLDValido = false;
-            int lnStatusProd = 0;
-            int LnAgencia = 0;
-            SqlDataReader dr;
-
-            try
-            {
-                lbHOLDValido = false;
-
-                if(MaRegistros[Indice].TipoTransaccion != "A")
-                {
-                    msSQL = $@"
-                        Select 
-                            PC.producto_contratado 
-                        FROM 
-                            {msDBName}..PRODUCTO_CONTRATADO PC 
-                            INNER JOIN {msDBName}..HOLD H ON PC.producto_contratado = H.producto_contratado
-                            INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
-                            INNER JOIN {msDBName}..CONCEPTO C ON PC.producto_contratado = C.producto_contratado
-                            INNER JOIN {msDBName}..CONCEPTO_DEFINIDO CD ON PC.producto_contratado = {lsNoHold}
-                        WHERE
-                            CD.concepto_definido_global = {lnConceptoDefinidoGlobal}
-                    ";
-
-                    dr = bd.ejecutarConsulta(msSQL);
-
-                    if(dr != null)
-                    {
-                        lnProdCont = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "producto_contratado", Type = "int" }, dr).ToString());
-                    }
-                    else
-                    {
-                        RegistraErrorHold("Al Buscar Hold en TKT para Mantenimiento", Indice);                      
-                        ActualizaHOLDTKT_AS400(lbHOLDValido);
-                    }
-                    msSQL = $"Select status_producto from {msDBName}..PRODUCTO_CONTRATADO where producto_contratado  = {lnProdCont}";
-
-                    dr = bd.ejecutarConsulta(msSQL);
-
-                    if(dr != null)
-                    {
-                        RegistraErrorHold("Ocurrio un error al obtener el status del Hold.", Indice);
-                        ActualizaHOLDTKT_AS400(lbHOLDValido);
-                    }
-                    else
-                    {
-                        lnStatusProd = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "status_producto", Type = "int" }, dr).ToString());
-                    }
-                }
-
-                using (SqlConnection connection = new SqlConnection(bd.connectionString))
-                {
-
-                    switch (MaRegistros[Indice].TipoTransaccion)
-                    {
-                        case "A":
-
-                            connection.Open();
-
-                            SqlCommand command = connection.CreateCommand();
-                            SqlTransaction transaction;
-
-                            transaction = connection.BeginTransaction("trnscActualizaHOLDTKT");
-                            command.Connection = connection;
-                            command.Transaction = transaction;
-
-
-                            msSQL = $@"
-                                UPDATE 
-                                    {msDBName}....HOLD
-                                SET
-                                    hold = @hold, secuencia_hold = @secuencia_hold
-                                FROM
-                                    {msDBName}..PRODUCTO_CONTRATADO PC
-                                    INNER JOIN {msDBName}..HOLD H PC.producto_contratado = H.producto_contratado  
-                                    INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
-                                WHERE
-                                    status_producto = @status_producto {lnStatusProductoGlobal}
-                                ";
-
-
-                            command.Parameters.Clear();
-
-                            command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
-                            command.Parameters.AddWithValue("@secuencia_hold", MaRegistros[Indice].NumeroSecuencia);
-                            command.Parameters.AddWithValue("@status_producto", lnStatusProductoGlobal);
-
-                            command.CommandText = msSQL;
-
-                            if (command.ExecuteNonQuery() < 1)
-                            {
-                                RegistraErrorHold("Al insertar en HOLD ", Indice);
-                                ActualizaHOLDTKT_AS400(lbHOLDValido);
-                            }
-                            else
-                            {
-                                msSQL = $@"
-                                UPDATE 
-                                        {msDBName}....HOLD_RETIRO
-                                    SET
-                                        hold = @hold
-                                    FROM
-                                        {msDBName}..PRODUCTO_CONTRATADO PC
-                                        INNER JOIN {msDBName}..HOLD H PC.producto_contratado = H.producto_contratado  
-                                        INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
-                                    WHERE
-                                        status_producto = @status_producto {lnStatusProductoGlobal}
-                                ";
-
-                                command.Parameters.Clear();
-
-                                command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
-                                command.Parameters.AddWithValue("@status_producto", lnStatusProductoGlobal);
-
-                                command.CommandText = msSQL;
-
-                                if (command.ExecuteNonQuery() < 1)
-                                {
-                                    RegistraErrorHold("Al insertar en la tabla HOLD_RETIRO", Indice);
-                                    ActualizaHOLDTKT_AS400(lbHOLDValido);
-                                }
-
-                                command.Transaction.Commit();
-                            }
-                            break;
-
-                        case "M":
-                            ActualizaHOLDTKT_AS400(lbHOLDValido);
-                            break;
-
-                        case "D":
-                            ActualizaHOLDTKT_AS400(lbHOLDValido);
-                            break;
-                    }
-                }
-                ActualizaHOLDTKT_AS400(lbHOLDValido);
-                mnProdCont = 0;
-                mnOperDef = 0;
-                msTiempo = "";
-                msTipoMovimiento = "";
-
-
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
-        private void ActualizaHOLDTKT_AS400(bool Valido)
-        {
-            try
-            {
-                msSQL400 = $"UPDATE {msLibAS400}.lsArchivoHOLDAS400";  
-
-                if(Valido)
-                {
-                    msSQL400 += (lsTipoTranHold == "A") ? "set HPROC = 'M' " : "";
-                    msSQL400 += (lsTipoTranHold == "M") ? "set HPROC = 'X' " : "";
-                    msSQL400 += (lsTipoTranHold == "D") ? "set HPROC = 'X' " : "";
-                }
-                else
-                {
-                    msSQL400 += "set HPROC = 'X'";
-                }
-
-                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}'";
-                msSQL400 += $"AND HHLDN = {MaRegistros[lnDatosHOLD].Hold}";
-                msSQL400 += $"AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}'";
-                msSQL400 += $"AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
-
-                as400.EjecutaActualizacion(msSQL400);
-
-                
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
+        /// <summary>
+        /// Guardando en tablas de SQL Server
+        /// </summary>
+        /// <param name="Indice"></param>
         private void GuardaHolds(int Indice)
         {
             try
@@ -754,9 +468,9 @@ namespace Interfaz_Retenciones
                 bool lbHOLDValido = false; ;
                 int lnStatusProd = 0;
                 int LnAgencia = 0;
-                
 
-                SqlDataReader dr;               
+
+                SqlDataReader dr;
 
                 if (MaRegistros[Indice].TipoTransaccion != "A")
                 {
@@ -1125,7 +839,7 @@ namespace Interfaz_Retenciones
                             }
 
                             break;
-                            
+
                     }
                     command.Transaction.Commit();
                     ActualizaHOLD_AS400(lbHOLDValido);
@@ -1140,111 +854,628 @@ namespace Interfaz_Retenciones
             }
         }
 
-        private void ActualizaHOLD_AS400(bool Valido)
+        /// <summary>
+        /// Establece conexion con la base de datos de SQL Server
+        /// </summary>
+        /// <returns></returns>
+        public bool EstableceConexionBD()
         {
             try
             {
-                msSQL400 = "UPDATE " + msLibAS400 + "." + lsArchivoHOLDAS400;
+                string conn_str = $"Data source ={msDBSrvr}; uid ={msDBuser}; PWD ={msDBPswd}; initial catalog = {msDBName}";
 
-                //Si el Hold se realizo la modificacion
-                string[] letras = { "A", "M", "D" };
-                if (Valido == true && Funcion.Contains(lsTipoTranHold, letras))
+                if (bd == null)
                 {
-                    msSQL400 += $" set HPROC = '{lsTipoTranHold}' ";
-                }
-                else
-                {
-                    msSQL400 += $" set HPROC = 'X' ";
+                    bd = new FuncionesBD(conn_str);
+                    bd.ActiveConnection = true;
+                    this.mbConexion = true;
                 }
 
-                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}' AND HHLDN = {MaRegistros[lnDatosHOLD].Hold} AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}' AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
-
-                int resultado = as400.EjecutaActualizacion(msSQL400);
             }
             catch (Exception ex)
+            {
+                Log.Escribe(ex);
+                this.mbConexion = false;
+            }
+
+            return this.mbConexion;
+        }
+
+        /// <summary>
+        /// Despliega los datos de configuracion de la tabla PARAMETROS
+        /// </summary>
+        /// <returns></returns>
+        private bool DespliegaDatos()
+        {
+            string lsCadena;
+            int lnIndice;
+            bool despliegaDatos = false;
+
+            try
+            {
+                lblFechaSistema.Text = fecha_servidor.ToString();
+                gsFechaSQL = fecha_servidor.ToString();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+            return true;
+
+        }
+
+
+        /// <summary>
+        /// Se ejecuta cuando el checkbox "Holds de houston" canbia de valor
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void chkRecibeHoldsLA_CheckedChanged(object sender, EventArgs e)
+        {
+            if(chkRecibeHoldsLA.Checked)
+            {
+                lblStatus.Text = "Holds Kapiti Houston";
+            }
+            else
+            {
+                lblPendHoldsLA.Text = "";
+            }
+           
+        }
+
+        /// <summary>
+        /// Ejecuta funcion RecibeHolds y al terminar escribe fehca del siguiente proceso
+        /// </summary>
+        private void RecibeHoldsLA()
+        {
+            RecibeHolds(1);
+            lblNextHoldLA.Text = DateTime.Parse(this.gsFechaSQL).AddMinutes(5).ToString("dd-MM-yyyy hh:mm");
+        }
+
+        /// <summary>
+        /// Reescribe fechas en archivo de configuracion
+        /// </summary>
+        private void SaveDates()
+        {
+            try
+            {
+                Funcion.SetParameterAppSettings("PERIODOHOLDLA", txtPeriodoHoldLA.Text, "PARAMETROS");
+                Funcion.SetParameterAppSettings("FECHAHOLDLA", txtNextHoldLA.Text, "PARAMETROS");
+            }
+            catch (Exception)
             {
 
                 throw;
             }
         }
 
-        private void RegistraErrorHold(string Mensaje, int Indice)
+        /// <summary>
+        /// Inicia la Transmisión y refresca el estatus de la información
+        /// </summary>
+        private void Start()
         {
-            using (SqlConnection connection = new SqlConnection(bd.connectionString))
+            if (!cblmc_ObtieneUsuario(msUSREQUGC, mn_numuserGC))
             {
+                MessageBox.Show("No fue Posible Obtener el Usuario  de la Agencia Gran Caimán", "Obtención de Usuario");
+            }
+            else
+            {
+                msClaveModParams = ValorParametro("INTFMOVS_PARAMS");
+            }
+            pnlStatus.Visible = false;
 
-                connection.Open();
+            if (DespliegaDatos())
+            {
+                timer1.Interval = 15000;
+            }
+            MovPendientes();
+        }
 
-                SqlCommand command = connection.CreateCommand();
-                SqlTransaction transaction;
+        /// <summary>
+        /// Detiene la transmision
+        /// </summary>
+        private void Detener()
+        {
+            pnlStatus.Visible = true;
+            Message_PnlStatus("DESCONECTANDO");
+            SaveDates();
+        }
 
-                transaction = connection.BeginTransaction("trnscBitacoraError");
-                command.Connection = connection;
-                command.Transaction = transaction;
 
-                try
+        /// <summary>
+        /// Obtener el número de registros pendientes de bajarse de los Movimientos de Kapiti L.A., Kapiti  G.C. y Hold L.A. si éstos existen
+        /// </summary>
+        private void MovPendientes()
+        {
+            OdbcDataReader dr;
+            try
+            {
+                Message_Transaction("Actualizando Pendientes a Recibir.");
+                lblPendHoldsLA.Text = "0";
+
+                if (chkRecibeHoldsLA.Checked == true)
                 {
+                    msSQL400 = $"SELECT COUNT(*) FROM {msLibAS400}.{txtArchivoHoldLA.Text}  Where HPROC <> 'A' and HPROC <> 'M' and HPROC <> 'D' and HPROC <> 'U' and HPROC <> 'X' and HPROC <> 'S'";
 
-                    BITACORA_ERROR_TICKET bitacora = new BITACORA_ERROR_TICKET { mensaje = Mensaje, tipo_msg = "H" };
+                    dr = as400.EjecutaSelect(msSQL400);
 
-                    command.Parameters.Clear();
-
-                    command.Parameters.AddWithValue("@mensaje", bitacora.mensaje);
-                    command.Parameters.AddWithValue("@tipo_mensaje", bitacora.tipo_msg);
-                    command.Parameters.Add("@ID", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
-
-
-                    msSQL = $@"
-                    Insert Into TICKET..BITACORA_ERRORES_TICKET 
-                    (fecha, mensaje, tipo_msg) 
-                    values 
-                    (getdate(), @mensaje, @tipo_mensaje) SET @ID = SCOPE_IDENTITY()";
-
-                    command.CommandText = msSQL;
-
-                    int resultado = command.ExecuteNonQuery();
-                    var identity = command.Parameters["@ID"].Value;
-
-
-                    if (Indice > -1)
+                    if (dr != null)
                     {
-                        msSQL = @"
-                            Insert Into TICKET..ERROR_HOLDS 
-                            values (@identity, @usuario, @agencia, @cuenta, @sufijo, @desc1, @desc2, @desc3, @desc4, @fecha1, @fecha2, @monto, @fechaequation, @hold, @tipotransc)";
-
-                        command.CommandText = msSQL;
-                        command.Parameters.Clear();
-
-                        command.Parameters.AddWithValue("@identity", identity);
-                        command.Parameters.AddWithValue("@usuario", MaRegistros[Indice].Usuario);
-                        command.Parameters.AddWithValue("@agencia", MaRegistros[Indice].Agencia);
-                        command.Parameters.AddWithValue("@cuenta", MaRegistros[Indice].Cuenta);
-                        command.Parameters.AddWithValue("@sufijo", MaRegistros[Indice].Sufijo);
-                        command.Parameters.AddWithValue("@desc1", MaRegistros[Indice].Desc1);
-                        command.Parameters.AddWithValue("@desc2", MaRegistros[Indice].Desc2);
-                        command.Parameters.AddWithValue("@desc3", MaRegistros[Indice].Desc3);
-                        command.Parameters.AddWithValue("@desc4", MaRegistros[Indice].Desc4);
-                        command.Parameters.AddWithValue("@fecha1", MaRegistros[Indice].Fecha1.ToString("yyyy-MM-dd hh:mm:ss"));
-                        command.Parameters.AddWithValue("@fecha2", MaRegistros[Indice].Fecha2.ToString("yyyy-MM-dd hh:mm:ss"));
-                        command.Parameters.AddWithValue("@monto", MaRegistros[Indice].Monto);
-                        command.Parameters.AddWithValue("@fechaequation", MaRegistros[Indice].Fechaequation);
-                        command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
-                        command.Parameters.AddWithValue("@tipotransc", MaRegistros[Indice].TipoTransaccion);
-
-                        resultado = command.ExecuteNonQuery();
-
-                        transaction.Commit();
-
-
+                        lblPendHoldsLA.Text = as400.LLenarMapToQuery(new Map { Key = "cuenta", Type = "int" }, dr).Value.ToString();
                     }
                 }
-                catch (Exception ex)
+
+                mdRefreshTime = fecha_servidor.AddMinutes(5);
+                Message_Transaction("");
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
+        /// <summary>
+        /// Carga Formulario
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            txtNextHoldLA.GotFocus += txtNextHoldLA_GotFocus;
+            //main = new Main();
+
+            //this.Height = 659;
+            //this.Width = 784;
+            //this.MaximizeBox = false;
+            //this.MinimizeBox = false;
+
+            //Init();
+        }
+
+       
+
+        /// <summary>
+        /// Despliega un mensaje en la pantalla de Procesos
+        /// </summary>
+        /// <param name="mensaje"></param>
+        private void Message_Transaction(string mensaje)
+        {
+            lblTransactionMessage.Text = mensaje;
+        }
+
+        /// <summary>
+        /// Cada certo tiempo verifica la configuración para lanzar los procesos de movimientos
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            string LsFechaSistema;
+            string LsHora;
+            int idTarea;
+
+            if (timer1.Interval == 0)
+            {
+                idTarea = 0;
+
+                if (chkRecibeHoldsLA.Checked)
                 {
-                    transaction.Rollback();
+                    if (DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null) == fecha_servidor)
+                    {
+                        idTarea = 3;
+                        LsHora = Hora(DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null), Int32.Parse(txtPeriodoHoldLA.Text)).ToString("hh:mm");
+                    }
                 }
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void txtNextHoldLA_TextChanged(object sender, EventArgs e)
+        {
+            lblNextHoldLA.Text = txtNextHoldLA.Text;
+        }
+
+        /// <summary>
+        /// Se desencadena cuando pierde el FOCUS
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void txtNextHoldLA_Leave(object sender, EventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// Se desencadena cuando obtiene el FOCUS
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void txtNextHoldLA_GotFocus(object sender, EventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// Otiene el número de usuario recibido como parámetro
+        /// </summary>
+        /// <param name="ps_nombre"></param>
+        /// <param name="pn_usuarioGC"></param>
+        /// <returns></returns>
+        private bool cblmc_ObtieneUsuario(string ps_nombre, int pn_usuarioGC)
+        {
+            bool cblmc_ObtieneUsuario = false;
+            string lsSQL = String.Empty;
+
+            try
+            {
+                pn_usuarioGC = -1;
+                lsSQL = $"SELECT usuario FROM CATALOGOS..{gs_Usuario} WHERE login = '{ps_nombre}'";
+
+                SqlDataReader dr = bd.ejecutarConsulta(lsSQL);
+
+                if (dr != null)
+                {
+                    pn_usuarioGC = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "usuario", Type = "smallint" }, dr).Value.ToString());
+                    cblmc_ObtieneUsuario = true;
+                }
+                else
+                {
+                    cblmc_ObtieneUsuario = false;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+            return cblmc_ObtieneUsuario;
+        }
+
+        /// <summary>
+        /// Devuelve el valor de un parámetro de la tabla PARAMETRIZACION
+        /// </summary>
+        /// <param name="Parametro"></param>
+        /// <returns></returns>
+        private string ValorParametro(string Parametro)
+        {
+            string ls_sql = String.Empty;
+            string ValorParametro = String.Empty;
+            try
+            {
+                ls_sql = $"Select valor from PARAMETRIZACION where codigo = '{Parametro}'";
+
+                SqlDataReader dr = bd.ejecutarConsulta(ls_sql);
+
+                if (dr != null)
+                {
+                    ValorParametro = bd.LLenarMapToQuery(new Map { Key = "valor", Type = "string" }, dr).Value.ToString().Trim();
+                }
+                else
+                {
+                    MessageBox.Show($"Error al Obtener Dato Parametrizado. {Environment.NewLine} Notifique al Departamento de Sistemas! {Environment.NewLine} Código de Parametro: {Parametro}", "Error");
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            return ValorParametro;
+        }
+
+        /// <summary>
+        /// Se desencadena al presionar una telca sobre el input
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void txtNextHoldLA_KeyPress(object sender, KeyPressEventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="idProceso"></param>
+        private void AjustaTimers(int idProceso)
+        {
+
+        }
+
+        /// <summary>
+        /// Muestra un mensaje en el lbael de STATUS 
+        /// </summary>
+        /// <param name="mensaje"></param>
+        private void Message_PnlStatus(string mensaje)
+        {
+            pnlStatus.ForeColor = Color.Green;
+            pnlStatus.Text = mensaje;
+        }
+
+
+        /// <summary>
+        /// Actualiza datos en tablas de SQL Server
+        /// </summary>
+        /// <param name="Indice"></param>
+        private void ActualizaHOLD_TKT(int Indice)
+        {
+            int lnProdCont = 0;
+            string lsFechaVenc = String.Empty;
+            int lnStatusProducto = 0;
+            bool lbHOLDValido = false;
+            int lnStatusProd = 0;
+            int LnAgencia = 0;
+            SqlDataReader dr;
+
+            try
+            {
+                lbHOLDValido = false;
+
+                if (MaRegistros[Indice].TipoTransaccion != "A")
+                {
+                    msSQL = $@"
+                        Select 
+                            PC.producto_contratado 
+                        FROM 
+                            {msDBName}..PRODUCTO_CONTRATADO PC 
+                            INNER JOIN {msDBName}..HOLD H ON PC.producto_contratado = H.producto_contratado
+                            INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
+                            INNER JOIN {msDBName}..CONCEPTO C ON PC.producto_contratado = C.producto_contratado
+                            INNER JOIN {msDBName}..CONCEPTO_DEFINIDO CD ON PC.producto_contratado = {lsNoHold}
+                        WHERE
+                            CD.concepto_definido_global = {lnConceptoDefinidoGlobal}
+                    ";
+
+                    dr = bd.ejecutarConsulta(msSQL);
+
+                    if (dr != null)
+                    {
+                        lnProdCont = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "producto_contratado", Type = "int" }, dr).ToString());
+                    }
+                    else
+                    {
+                        RegistraErrorHold("Al Buscar Hold en TKT para Mantenimiento", Indice);
+                        ActualizaHOLDTKT_AS400(lbHOLDValido);
+                    }
+                    msSQL = $"Select status_producto from {msDBName}..PRODUCTO_CONTRATADO where producto_contratado  = {lnProdCont}";
+
+                    dr = bd.ejecutarConsulta(msSQL);
+
+                    if (dr != null)
+                    {
+                        RegistraErrorHold("Ocurrio un error al obtener el status del Hold.", Indice);
+                        ActualizaHOLDTKT_AS400(lbHOLDValido);
+                    }
+                    else
+                    {
+                        lnStatusProd = Int32.Parse(bd.LLenarMapToQuery(new Map { Key = "status_producto", Type = "int" }, dr).ToString());
+                    }
+                }
+
+                using (SqlConnection connection = new SqlConnection(bd.connectionString))
+                {
+
+                    switch (MaRegistros[Indice].TipoTransaccion)
+                    {
+                        case "A":
+
+                            connection.Open();
+
+                            SqlCommand command = connection.CreateCommand();
+                            SqlTransaction transaction;
+
+                            transaction = connection.BeginTransaction("trnscActualizaHOLDTKT");
+                            command.Connection = connection;
+                            command.Transaction = transaction;
+
+
+                            msSQL = $@"
+                                UPDATE 
+                                    {msDBName}....HOLD
+                                SET
+                                    hold = @hold, secuencia_hold = @secuencia_hold
+                                FROM
+                                    {msDBName}..PRODUCTO_CONTRATADO PC
+                                    INNER JOIN {msDBName}..HOLD H PC.producto_contratado = H.producto_contratado  
+                                    INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
+                                WHERE
+                                    status_producto = @status_producto {lnStatusProductoGlobal}
+                                ";
+
+
+                            command.Parameters.Clear();
+
+                            command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+                            command.Parameters.AddWithValue("@secuencia_hold", MaRegistros[Indice].NumeroSecuencia);
+                            command.Parameters.AddWithValue("@status_producto", lnStatusProductoGlobal);
+
+                            command.CommandText = msSQL;
+
+                            if (command.ExecuteNonQuery() < 1)
+                            {
+                                RegistraErrorHold("Al insertar en HOLD ", Indice);
+                                ActualizaHOLDTKT_AS400(lbHOLDValido);
+                            }
+                            else
+                            {
+                                msSQL = $@"
+                                UPDATE 
+                                        {msDBName}....HOLD_RETIRO
+                                    SET
+                                        hold = @hold
+                                    FROM
+                                        {msDBName}..PRODUCTO_CONTRATADO PC
+                                        INNER JOIN {msDBName}..HOLD H PC.producto_contratado = H.producto_contratado  
+                                        INNER JOIN {msDBName}..HOLD_RETIRO HR ON PC.producto_contratado = HR.producto_contratado
+                                    WHERE
+                                        status_producto = @status_producto {lnStatusProductoGlobal}
+                                ";
+
+                                command.Parameters.Clear();
+
+                                command.Parameters.AddWithValue("@hold", MaRegistros[Indice].Hold);
+                                command.Parameters.AddWithValue("@status_producto", lnStatusProductoGlobal);
+
+                                command.CommandText = msSQL;
+
+                                if (command.ExecuteNonQuery() < 1)
+                                {
+                                    RegistraErrorHold("Al insertar en la tabla HOLD_RETIRO", Indice);
+                                    ActualizaHOLDTKT_AS400(lbHOLDValido);
+                                }
+
+                                command.Transaction.Commit();
+                            }
+                            break;
+
+                        case "M":
+                            ActualizaHOLDTKT_AS400(lbHOLDValido);
+                            break;
+
+                        case "D":
+                            ActualizaHOLDTKT_AS400(lbHOLDValido);
+                            break;
+                    }
+                }
+                ActualizaHOLDTKT_AS400(lbHOLDValido);
+                mnProdCont = 0;
+                mnOperDef = 0;
+                msTiempo = "";
+                msTipoMovimiento = "";
+
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Actualiza en el archivo de AS400 FAHLDLA
+        /// </summary>
+        /// <param name="Valido"></param>
+        private void ActualizaHOLDTKT_AS400(bool Valido)
+        {
+            try
+            {
+                msSQL400 = $"UPDATE {msLibAS400}.{lsArchivoHOLDAS400}";
+
+                if (Valido)
+                {
+                    msSQL400 += (lsTipoTranHold == "A") ? "set HPROC = 'M' " : "";
+                    msSQL400 += (lsTipoTranHold == "M") ? "set HPROC = 'X' " : "";
+                    msSQL400 += (lsTipoTranHold == "D") ? "set HPROC = 'X' " : "";
+                }
+                else
+                {
+                    msSQL400 += "set HPROC = 'X'";
+                }
+
+                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}'";
+                msSQL400 += $"AND HHLDN = {MaRegistros[lnDatosHOLD].Hold}";
+                msSQL400 += $"AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}'";
+                msSQL400 += $"AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
+
+                as400.EjecutaActualizacion(msSQL400);
+
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
+        /// <summary>
+        /// Proceso INICIAL
+        /// </summary>
+        public void Init()
+        {
+            int lnWDif;
+            int lnHDif;
+            string Str_Ruta;
+
+            this.mbConexion = false;
+            Str_Ruta = "ruta app.config";
+
+
+            EstableceParametros();
+
+            if (!Bandera)
+            {
+                Funcion.SetParameterAppSettings("BANDERA", "1", "PARAMETROS");
+            }
+            else
+            {
+
+            }
+
+            if (EstableceConexionBD() && as400.Conectar())
+            {
+                fecha_servidor = DateTime.Parse(bd.obtenerFechaServidor());
+                hora_servidor = TimeSpan.Parse(fecha_servidor.ToString("hh:mm:ss"));
+
+                txtLIB400.Text = msLibAS400;
+                txtDSN400.Text = msDSN400;
+                txtUser400.Text = msUser400;
+                txtPswd400.Text = msPswd400;
+                txtDBUser.Text = msDBuser;
+                txtDBPswd.Text = msDBPswd;
+                txtDBName.Text = msDBName;
+                txtDBSrvr.Text = msDBSrvr;
+
+                lblServer.Text = msDBSrvr;
+                lblDataBase.Text = msDBName;
+                lblDSNAS400.Text = msDSN400;
+
+                this.gsFechaSQL = bd.obtenerFechaServidor();
+
+                chkRecibeHoldsLA.Checked = (RecibeHOLDLA == "1") ? true : false;
+                txtArchivoHoldLA.Text = ArchivoHOLDS;
+                txtPeriodoHoldLA.Text = Funcion.getValueAppConfig("PERIODOHOLDLA", "PARAMETROS");
+                txtNextHoldLA.Text = Funcion.getValueAppConfig("FECHAHOLDLA", "PARAMETROS") + " 10:00";
+
+
+                mnFirstTime = 1;
+
+
+                Message_PnlStatus("CONECTANDO....");
+                Start();
+                Message_PnlStatus("EN LINEA....");
+                RecibeHoldsLA();
+                Detener();
+
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los parametros de configuracion
+        /// </summary>
         public void EstableceParametros()
         {
             encriptacion = new Encriptacion();
@@ -1270,39 +1501,11 @@ namespace Interfaz_Retenciones
 
         }
 
-        public bool EstableceConexionBD()
-        {
-            try
-            {
-                string conn_str = $"Data source ={msDBSrvr}; uid ={msDBuser}; PWD ={msDBPswd}; initial catalog = {msDBName}";
+      
 
-                if (bd == null)
-                {
-                    bd = new FuncionesBD(conn_str);
-                    bd.ActiveConnection = true;
-                    this.mbConexion = true;
-                }
+       
 
-            }
-            catch (Exception ex)
-            {
-                Log.Escribe(ex);
-                this.mbConexion = false;
-            }
-
-            return this.mbConexion;
-        }
-
-        private void Message_PnlStatus(string mensaje)
-        {
-            pnlStatus.ForeColor = Color.Green;
-            pnlStatus.Text = mensaje;
-        }
-
-        private void Message_Transaction(string mensaje)
-        {
-            lblTransactionMessage.Text = mensaje;
-        }
+       
 
 
         private void Message_Status(string mensaje)
@@ -1320,36 +1523,14 @@ namespace Interfaz_Retenciones
 
         }
 
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            string LsFechaSistema;
-            string LsHora;
-            int idTarea;
-
-            if (timer1.Interval == 0)
-            {
-                idTarea = 0;
-
-                if(chkRecibeHoldsLA.Checked)
-                {
-                    if (DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null) == fecha_servidor)
-                    {
-                        idTarea = 3;
-                        LsHora = Hora(DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null), Int32.Parse(txtPeriodoHoldLA.Text)).ToString("hh:mm");
-                    }
-                }
-            }
-        }
+       
 
         private DateTime Hora(DateTime Origen, int Minutos)
         {
             return Origen.AddMinutes(Minutos);
         }
 
-        private void txtNextHoldLA_TextChanged(object sender, EventArgs e)
-        {
-            lblNextHoldLA.Text = txtNextHoldLA.Text;
-        }
+        
     }
 }
 

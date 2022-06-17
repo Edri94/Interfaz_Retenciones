@@ -277,6 +277,7 @@ namespace Interfaz_Retenciones
             this.chkRecibeHoldsLA.TabIndex = 6;
             this.chkRecibeHoldsLA.Text = "Hold\'s de houston";
             this.chkRecibeHoldsLA.UseVisualStyleBackColor = true;
+            this.chkRecibeHoldsLA.CheckedChanged += new System.EventHandler(this.chkRecibeHoldsLA_CheckedChanged);
             // 
             // label2
             // 
@@ -317,7 +318,6 @@ namespace Interfaz_Retenciones
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Status";
-            this.groupBox3.Enter += new System.EventHandler(this.groupBox3_Enter);
             // 
             // pbrMovimientos
             // 
@@ -489,6 +489,8 @@ namespace Interfaz_Retenciones
             this.txtNextHoldLA.Size = new System.Drawing.Size(188, 26);
             this.txtNextHoldLA.TabIndex = 1;
             this.txtNextHoldLA.TextChanged += new System.EventHandler(this.txtNextHoldLA_TextChanged);
+            this.txtNextHoldLA.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtNextHoldLA_KeyPress);
+            this.txtNextHoldLA.Leave += new System.EventHandler(this.txtNextHoldLA_Leave);
             // 
             // txtDSN400
             // 
@@ -509,6 +511,10 @@ namespace Interfaz_Retenciones
             // timer1
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
+            // timer2
+            // 
+            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
             // Form1
             // 
