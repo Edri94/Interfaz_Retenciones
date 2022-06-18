@@ -115,12 +115,12 @@ namespace Interfaz_Retenciones
             catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
         }
 
         /// <summary>
-        /// Compara los Registros de AS400 con los registros de Ticket
+        /// Compara los Registros de AS400 con los registros de Ticket (nunca se usa)
         /// </summary>
         /// <param name="Indice"></param>
         /// <returns></returns>
@@ -130,13 +130,85 @@ namespace Interfaz_Retenciones
         }
 
         /// <summary>
-        /// Inserta un mensaje de error provocado en el sistema
+        /// Inserta un mensaje de error provocado en el sistema (nunca se usa)
         /// </summary>
         /// <param name="Mensaje"></param>
         /// <param name="Indice"></param>
         private void RegistraError(string Mensaje, int Indice)
         {
+            string lsIdentity;
+            ERROR_MOVIMIENTO_DIRECTO emv = null;
 
+            using (SqlConnection connection = new SqlConnection(bd.connectionString))
+            {
+                connection.Open();
+
+                SqlCommand command = connection.CreateCommand();
+                SqlTransaction transaction;
+
+                transaction = connection.BeginTransaction("trnscBitacoraError");
+                command.Connection = connection;
+                command.Transaction = transaction;
+
+                try
+                {
+                    BITACORA_ERROR_TICKET bitacora = new BITACORA_ERROR_TICKET { mensaje = Mensaje, tipo_msg = "M" };
+
+                    command.Parameters.Clear();
+
+                    command.Parameters.AddWithValue("@mensaje", bitacora.mensaje);
+                    command.Parameters.AddWithValue("@tipo_mensaje", bitacora.tipo_msg);
+                    command.Parameters.Add("@ID", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
+
+
+                    msSQL = $@"
+                    Insert Into {msDBName}..BITACORA_ERRORES_TICKET 
+                    (fecha, mensaje, tipo_msg) 
+                    values 
+                    (getdate(), @mensaje, @tipo_mensaje) SET @ID = SCOPE_IDENTITY()";
+
+                    command.CommandText = msSQL;
+
+                    int resultado = command.ExecuteNonQuery();
+                    var identity = command.Parameters["@ID"].Value;
+                    
+                    
+                    if (Indice > -1)
+                    {
+                        msSQL = @"
+                            Insert Into TICKET..ERROR_MOVIMIENTO_DIRECTO 
+                            values (@identity, @agencia, @cuenta, @sufijo, @referencia, @fecha_valor, @monto, @narrativa1, @narrativa2, @narrativa3, @narrativa4, @fecha_mov, @cod_tran, @usuario_kap, @tipo_transaccion)";
+
+                        command.CommandText = msSQL;
+                        command.Parameters.Clear();
+
+                        command.Parameters.AddWithValue("@identity", emv.NumMensaje);
+                        command.Parameters.AddWithValue("@agencia", emv.Agencia);
+                        command.Parameters.AddWithValue("@cuenta", emv.Cuenta);
+                        command.Parameters.AddWithValue("@sufijo", emv.Sufijo);
+                        command.Parameters.AddWithValue("@referencia", emv.Referencia);
+                        command.Parameters.AddWithValue("@fecha_valor", emv.FechaValor);
+                        command.Parameters.AddWithValue("@monto", emv.Monto);
+                        command.Parameters.AddWithValue("@narrativa1", emv.Narrativa1);
+                        command.Parameters.AddWithValue("@narrativa2", emv.Narrativa2);
+                        command.Parameters.AddWithValue("@narrativa3", emv.Narrativa3);
+                        command.Parameters.AddWithValue("@narrativa4", emv.Narrativa4);
+                        command.Parameters.AddWithValue("@fecha_mov", emv.FechaMov);
+                        command.Parameters.AddWithValue("@cod_tran", emv.CodTran);
+                        command.Parameters.AddWithValue("@usuario_kap", emv.UsuarioKap);
+                        command.Parameters.AddWithValue("@tipo_transaccion", emv.TipoTransaccion);
+
+                        resultado = command.ExecuteNonQuery();
+
+                        transaction.Commit();
+                    }
+
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                }
+            }
         }
 
         /// <summary>
@@ -146,6 +218,8 @@ namespace Interfaz_Retenciones
         /// <param name="Indice">index de registro dodne se produjo el error</param>
         private void RegistraErrorHold(string Mensaje, int Indice)
         {
+            ERROR_HOLD eh;
+
             using (SqlConnection connection = new SqlConnection(bd.connectionString))
             {
 
@@ -449,8 +523,7 @@ namespace Interfaz_Retenciones
             }
             catch (Exception ex)
             {
-
-                throw;
+                Log.Escribe(ex);
             }
         }
 
@@ -850,7 +923,7 @@ namespace Interfaz_Retenciones
             catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
         }
 
@@ -896,10 +969,10 @@ namespace Interfaz_Retenciones
                 lblFechaSistema.Text = fecha_servidor.ToString();
                 gsFechaSQL = fecha_servidor.ToString();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
 
             return true;
@@ -944,10 +1017,10 @@ namespace Interfaz_Retenciones
                 Funcion.SetParameterAppSettings("PERIODOHOLDLA", txtPeriodoHoldLA.Text, "PARAMETROS");
                 Funcion.SetParameterAppSettings("FECHAHOLDLA", txtNextHoldLA.Text, "PARAMETROS");
             }
-            catch (Exception)
+            catch (Exception ex )
             {
 
-                throw;
+                Log.Escribe(ex);
             }
         }
 
@@ -1011,10 +1084,10 @@ namespace Interfaz_Retenciones
                 Message_Transaction("");
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
         }
 
@@ -1027,6 +1100,7 @@ namespace Interfaz_Retenciones
         private void Form1_Load(object sender, EventArgs e)
         {
             txtNextHoldLA.GotFocus += txtNextHoldLA_GotFocus;
+
             //main = new Main();
 
             //this.Height = 659;
@@ -1112,6 +1186,7 @@ namespace Interfaz_Retenciones
         /// <param name="e"></param>
         private void txtNextHoldLA_GotFocus(object sender, EventArgs e)
         {
+            timer2.Enabled = false;
 
         }
 
@@ -1146,7 +1221,7 @@ namespace Interfaz_Retenciones
             }
             catch (Exception ex)
             {
-                throw;
+                Log.Escribe(ex);
             }
 
             return cblmc_ObtieneUsuario;
@@ -1176,10 +1251,10 @@ namespace Interfaz_Retenciones
                     MessageBox.Show($"Error al Obtener Dato Parametrizado. {Environment.NewLine} Notifique al Departamento de Sistemas! {Environment.NewLine} Código de Parametro: {Parametro}", "Error");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
             return ValorParametro;
         }
@@ -1200,7 +1275,11 @@ namespace Interfaz_Retenciones
         /// <param name="idProceso"></param>
         private void AjustaTimers(int idProceso)
         {
-
+            DateTime fecha_tmp = DateTime.Parse(txtNextHoldLA.Text);
+            if (hora_servidor > TimeSpan.ParseExact(fecha_tmp.ToString("hh:mm"), "hh:mm", null))
+            {
+                txtNextHoldLA.Text = fecha_tmp + hora_servidor.ToString("hh:mm");
+            }
         }
 
         /// <summary>
@@ -1366,10 +1445,10 @@ namespace Interfaz_Retenciones
 
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw;
+                Log.Escribe(ex);
             }
         }
 
@@ -1403,10 +1482,9 @@ namespace Interfaz_Retenciones
 
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                Log.Escribe(ex);
             }
         }
 

@@ -53,6 +53,7 @@
     <Compile Include="Helpers\Log.cs" />
     <Compile Include="Models\BITACORA_ERROR_TICKET.cs" />
     <Compile Include="Models\ERROR_HOLD.cs" />
+    <Compile Include="Models\ERROR_MOVIMIENTO_DIRECTO.cs" />
     <Compile Include="Models\FAHLDLA.cs" />
     <Compile Include="Models\Map.cs" />
     <Compile Include="Models\Producto.cs" />
