@@ -83,6 +83,9 @@ namespace Interfaz_Retenciones
 
         public Form1()
         {
+            this.Height = 659;
+            this.Width = 786;
+
             InitializeComponent();
         }
 
@@ -108,7 +111,7 @@ namespace Interfaz_Retenciones
                     msSQL400 += $" set HPROC = 'X' ";
                 }
 
-                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}' AND HHLDN = {MaRegistros[lnDatosHOLD].Hold} AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1}' AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
+                msSQL400 += $"WHERE HAN = '{MaRegistros[lnDatosHOLD].Cuenta}' AND HHLDN = {MaRegistros[lnDatosHOLD].Hold} AND HEQD = '{MaRegistros[lnDatosHOLD].Fechaequation1.ToString("yyyyMMdd")}' AND HTOP = '{MaRegistros[lnDatosHOLD].TipoTransaccion}'";
 
                 int resultado = as400.EjecutaActualizacion(msSQL400);
             }
@@ -1041,6 +1044,7 @@ namespace Interfaz_Retenciones
 
             if (DespliegaDatos())
             {
+                timer1.Enabled = true;
                 timer1.Interval = 15000;
             }
             MovPendientes();
@@ -1101,14 +1105,13 @@ namespace Interfaz_Retenciones
         {
             txtNextHoldLA.GotFocus += txtNextHoldLA_GotFocus;
 
-            //main = new Main();
+            main = new Main();
 
-            //this.Height = 659;
-            //this.Width = 784;
-            //this.MaximizeBox = false;
-            //this.MinimizeBox = false;
+            
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
 
-            //Init();
+            Init();
         }
 
        
@@ -1131,21 +1134,46 @@ namespace Interfaz_Retenciones
         {
             string LsFechaSistema;
             string LsHora;
-            int idTarea;
+            int idTarea = 0;
 
-            if (timer1.Interval == 0)
+
+            //***********************************************************************************
+            //LsHora = Hora(DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null).ToString(), Int32.Parse(txtPeriodoHoldLA.Text));
+
+            //string extract = Funcion.Mid(DateTime.Parse(LsHora).ToString("hh:mm"), 0, 2);
+            //if (Funcion.Mid(DateTime.Parse(LsHora).ToString("hh:mm"), 1, 2) == "00")
+            //{
+
+            //}
+            //***********************************************************************************
+
+
+            if (timer1.Interval != 0)
             {
-                idTarea = 0;
-
                 if (chkRecibeHoldsLA.Checked)
                 {
-                    if (DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null) == fecha_servidor)
+                    if (DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null).ToString("dd-MM-yyyy hh:mm") == fecha_servidor.ToString("dd-MM-yyyy hh:mm"))
                     {
                         idTarea = 3;
-                        LsHora = Hora(DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null), Int32.Parse(txtPeriodoHoldLA.Text)).ToString("hh:mm");
+                        LsHora = Hora(DateTime.ParseExact(txtNextHoldLA.Text, "dd-MM-yyyy hh:mm", null).ToString(), Int32.Parse(txtPeriodoHoldLA.Text));
+
+                        if (Funcion.Mid(DateTime.Parse(LsHora).ToString("hh:mm"),1,2) == "00")
+                        {
+                            LsFechaSistema = bd.obtenerFechaServidor(true);
+                            lblFechaSistema.Text = LsFechaSistema;
+                            txtNextHoldLA.Text = Fecha(LsFechaSistema) + " " + Hora(txtNextHoldLA.Text, Int32.Parse(txtPeriodoHoldLA.Text));
+                        }
+                        else
+                        {
+                            txtNextHoldLA.Text = Fecha(txtNextHoldLA.Text) + " " + Hora(txtNextHoldLA.Text, Int32.Parse(txtPeriodoHoldLA.Text));
+                        }
+
+                        if (chkRecibeHoldsLA.Checked) RecibeHolds(1);
                     }
                 }
             }
+
+            if (idTarea != 0) AjustaTimers(idTarea);
         }
 
         /// <summary>
@@ -1535,8 +1563,11 @@ namespace Interfaz_Retenciones
 
                 chkRecibeHoldsLA.Checked = (RecibeHOLDLA == "1") ? true : false;
                 txtArchivoHoldLA.Text = ArchivoHOLDS;
+                
+                string fecha_tmp = Funcion.getValueAppConfig("FECHAHOLDLA", "PARAMETROS");
                 txtPeriodoHoldLA.Text = Funcion.getValueAppConfig("PERIODOHOLDLA", "PARAMETROS");
-                txtNextHoldLA.Text = Funcion.getValueAppConfig("FECHAHOLDLA", "PARAMETROS") + " 10:00";
+                DateTime fecha_appconfig = DateTime.Parse(fecha_tmp);
+                txtNextHoldLA.Text = fecha_appconfig.ToString("dd-MM-yyyy") + " 10:00";
 
 
                 mnFirstTime = 1;
@@ -1579,11 +1610,6 @@ namespace Interfaz_Retenciones
 
         }
 
-      
-
-       
-
-       
 
 
         private void Message_Status(string mensaje)
@@ -1603,9 +1629,41 @@ namespace Interfaz_Retenciones
 
        
 
-        private DateTime Hora(DateTime Origen, int Minutos)
+        private string Hora(string Origen, int Minutos)
         {
-            return Origen.AddMinutes(Minutos);
+            string lsHoraCalculo = Origen;
+            DateTime temp;
+            
+            if(lsHoraCalculo == "")
+            {
+                lsHoraCalculo = Hora(DateTime.Now.ToString("hh:mm"), -5);
+            }
+            else if (!DateTime.TryParse(lsHoraCalculo, out temp))
+            {
+                lsHoraCalculo = Hora(DateTime.Now.ToString("hh:mm"), -5);
+            }
+            else
+            {
+                lsHoraCalculo = DateTime.Parse(lsHoraCalculo).ToString("hh:mm");
+            }
+            return DateTime.Parse(lsHoraCalculo).AddMinutes(Minutos).ToString("hh:mm");
+        }
+
+        private string Fecha(string Origen)
+        {
+            string lsFechaCalculo = Origen.Trim();
+            DateTime temp;
+
+            if (lsFechaCalculo == "")
+            {
+                lsFechaCalculo = bd.obtenerFechaServidor();
+            }
+            else if(!DateTime.TryParse(lsFechaCalculo, out temp))
+            {
+                lsFechaCalculo = bd.obtenerFechaServidor();
+            }
+            
+            return DateTime.Parse(lsFechaCalculo).ToString("dd-MM-yyyy");
         }
 
         

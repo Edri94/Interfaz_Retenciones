@@ -274,11 +274,26 @@ namespace Biblioteca_InterfazRetenciones.Data
 
         }
 
-        public string obtenerFechaServidor()
+        /// <summary>
+        /// Obtener fecha del servidor SQL
+        /// </summary>
+        /// <param name="con_hora">Se desea saber la fecha con hora o no</param>
+        /// <returns></returns>
+        public string obtenerFechaServidor(bool con_hora = false)
         {
             try
             {
-                string query = "select FORMAT(GETDATE(), 'yyyy-MM-dd hh:mm:ss')  as [fecha_actual]";
+                string query;
+
+                if(con_hora)
+                {
+                    query = "select FORMAT(GETDATE(), 'yyyy-MM-dd hh:mm:ss')  as [fecha_actual]";
+                }
+                else
+                {
+                    query = "select FORMAT(GETDATE(), 'yyyy-MM-dd')  as [fecha_actual]";
+                }
+                
                 SqlDataReader dr = ejecutarConsulta(query);
 
                 string fecha_actual = string.Empty;
